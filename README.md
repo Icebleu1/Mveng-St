@@ -198,3 +198,4 @@ Cette version a été adaptée pour PHP 5.6 :
 
 ## 📞 Contact
 MVENGINEERING — contact@mvengineering.cm
+Auteur — muhammanlabbo@gmail.com
