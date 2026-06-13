@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Administration / RH — MVENGINEERING</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    /* ── Layout ── */
+    .tabs        { display:flex; border-bottom:2px solid var(--gris-200); margin-bottom:20px; overflow-x:auto; }
+    .tab-btn     { padding:11px 18px; border:none; background:transparent; font-size:14px; font-weight:600; color:var(--gris-500); cursor:pointer; border-bottom:3px solid transparent; margin-bottom:-2px; white-space:nowrap; transition:all .2s; }
+    .tab-btn.active { color:var(--bleu); border-bottom-color:var(--bleu); }
+    .tab-panel   { display:none; }
+    .tab-panel.active { display:block; }
+    /* ── Dashboard grid ── */
+    .dash-grid   { display:grid; grid-template-columns:1fr 1fr; gap:18px; margin:20px 0; }
+    .chart-card  { background:var(--blanc); border-radius:var(--radius); box-shadow:var(--ombre); padding:22px; }
+    .chart-card h3 { font-size:14px; font-weight:700; margin-bottom:14px; color:var(--gris-900); }
+    /* ── Évaluation ── */
+    .stars-row   { display:flex; gap:20px; flex-wrap:wrap; margin-bottom:16px; }
+    .star-group  { flex:1; min-width:140px; }
+    .star-label  { font-size:12px; font-weight:600; color:var(--gris-700); margin-bottom:6px; }
+    .star-input  { display:flex; gap:4px; }
+    .star-input input[type=radio] { display:none; }
+    .star-input label { font-size:22px; cursor:pointer; color:var(--gris-300); transition:color .15s; }
+    .star-input input[type=radio]:checked ~ label,
+    .star-input label:hover,
+    .star-input label:hover ~ label { color:#f59e0b; }
+    /* Inverser l'ordre pour le CSS hack */
+    .star-input { flex-direction:row-reverse; justify-content:flex-end; }
+    .star-input label:hover,
+    .star-input label:hover ~ label { color:#f59e0b; }
+    /* ── Badge rapport ── */
+    .badge-soumis   { background:#dbeafe; color:#1e40af; }
+    .badge-lu       { background:#fef3c7; color:#92400e; }
+    .badge-valide   { background:#d1fae5; color:#065f46; }
+    .badge-a_revoir { background:#fee2e2; color:#991b1b; }
+    /* ── Profil card ── */
+    .profil-card { display:flex; align-items:center; gap:16px; background:var(--gris-100); border-radius:var(--radius-sm); padding:16px; margin-bottom:16px; }
+    .avatar-lg   { width:56px; height:56px; border-radius:50%; background:var(--bleu); color:#fff; display:flex; align-items:center; justify-content:center; font-size:22px; font-weight:700; flex-shrink:0; }
+    .avg-bar     { height:8px; border-radius:4px; background:var(--gris-200); margin-top:6px; }
+    .avg-fill    { height:100%; border-radius:4px; background:var(--bleu); transition:width .5s; }
+    /* ── Filtre row ── */
+    .filter-row  { display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:16px; }
+    @media(max-width:768px){ .dash-grid{ grid-template-columns:1fr; } }
+    @media print { .hamburger-btn,.sidebar,.sidebar-overlay,.topbar,.tabs,.filter-row,#toast-container{ display:none !important; } }
+  </style>
+</head>
+<body>
+
+<button class="hamburger-btn" id="hamburger-btn"><span></span><span></span><span></span></button>
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <div class="sidebar-logo"><div class="icon">&#127891;</div>MVENGINEERING</div>
+    <div class="sidebar-sub">Espace Admin / RH</div>
+    <div id="admin-badge" style="margin-top:10px"></div>
+  </div>
+  <nav>
+    <a href="index.html"><span class="nav-icon">&#127968;</span>Accueil</a>
+    <a href="demande.html"><span class="nav-icon">&#128221;</span>Demande de stage</a>
+    <a href="reception.html"><span class="nav-icon">&#128203;</span>R&#233;ception</a>
+    <a href="admin.html" class="active"><span class="nav-icon">&#128202;</span>Administration</a>
+    <a href="login.html"><span class="nav-icon">&#128272;</span>Connexion Admin</a>
+    <a href="login-stagiaire.html"><span class="nav-icon">&#129333;</span>Espace Stagiaire</a>
+    <a href="#" onclick="logout()"><span class="nav-icon">&#128682;</span>D&#233;connexion</a>
+  </nav>
+  <div class="sidebar-footer">&#169; 2025 MVENGINEERING</div>
+</aside>
+<div class="sidebar-overlay" id="sidebar-overlay"></div>
+<div id="toast-container"></div>
+
+<div class="topbar">
+  <span class="topbar-title">&#128202; Administration &amp; RH</span>
+  <div class="topbar-actions">
+    <span id="topbar-user" style="font-size:13px;color:var(--gris-500)"></span>
+    <button class="btn btn-outline btn-sm" onclick="exportPDF()">&#128424; Imprimer</button>
+    <button class="btn btn-primary btn-sm" onclick="loadAll()">&#128260; Actualiser</button>
+  </div>
+</div>
+
+<div class="main-content">
+
+  <!-- KPI -->
+  <div class="stats-grid">
+    <div class="stat-card bleu"><div class="stat-icon">&#128203;</div><div><div class="stat-value" id="st-total">&#8212;</div><div class="stat-label">Total demandes</div></div></div>
+    <div class="stat-card orange"><div class="stat-icon">&#9203;</div><div><div class="stat-value" id="st-attente">&#8212;</div><div class="stat-label">En attente</div></div></div>
+    <div class="stat-card vert"><div class="stat-icon">&#9989;</div><div><div class="stat-value" id="st-accepte">&#8212;</div><div class="stat-label">Accept&#233;es</div></div></div>
+    <div class="stat-card rouge"><div class="stat-icon">&#10060;</div><div><div class="stat-value" id="st-refuse">&#8212;</div><div class="stat-label">Refus&#233;es</div></div></div>
+    <div class="stat-card bleu" style="border-left-color:#0ea5e9"><div class="stat-icon" style="background:#e0f2fe">&#129333;</div><div><div class="stat-value" id="st-actifs">&#8212;</div><div class="stat-label">Stagiaires actifs</div></div></div>
+  </div>
+
+  <!-- Graphiques -->
+  <div class="dash-grid">
+    <div class="chart-card"><h3>&#128202; R&#233;partition statuts</h3><canvas id="chart-donut" height="200"></canvas></div>
+    <div class="chart-card"><h3>&#128200; &#201;volution mensuelle</h3><canvas id="chart-line"  height="200"></canvas></div>
+    <div class="chart-card"><h3>&#127979; Top fili&#232;res</h3><canvas id="chart-filieres" height="200"></canvas></div>
+    <div class="chart-card"><h3>&#128197; Activit&#233; ce mois</h3><div id="week-summary" style="text-align:center;padding:30px;color:var(--gris-500)">Chargement&#8230;</div></div>
+  </div>
+
+  <!-- Onglets principaux -->
+  <div class="card" style="margin-top:24px">
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab('demandes')">&#128203; Demandes</button>
+      <button class="tab-btn" onclick="switchTab('stagiaires')">&#129333; Stagiaires</button>
+      <button class="tab-btn" onclick="switchTab('evaluations')">&#11088; &#201;valuations</button>
+      <button class="tab-btn" onclick="switchTab('rapports')">&#128196; Rapports</button>
+      <button class="tab-btn" onclick="switchTab('utilisateurs')">&#128100; Utilisateurs</button>
+    </div>
+
+    <!-- ▸ DEMANDES -->
+    <div class="tab-panel active" id="tab-demandes">
+      <div class="filter-row">
+        <div class="search-bar" style="flex:1;max-width:300px"><span class="icon">&#128269;</span><input type="text" id="search-admin" placeholder="Rechercher&#8230;"></div>
+        <select class="form-control" id="filter-statut" style="width:150px" onchange="loadDemandes()">
+          <option value="">Tous statuts</option>
+          <option value="en_attente">En attente</option>
+          <option value="accepte">Accept&#233;es</option>
+          <option value="refuse">Refus&#233;es</option>
+        </select>
+        <button class="btn btn-outline btn-sm" onclick="exportTableCSV('tbl-demandes','demandes.csv')">&#11015; CSV</button>
+      </div>
+      <div class="table-wrapper">
+        <table id="tbl-demandes">
+          <thead><tr>
+            <th data-sort="id">#</th><th data-sort="nom">Nom</th><th>Email</th>
+            <th>&#201;cole</th><th>Fili&#232;re</th><th>Date</th>
+            <th data-sort="statut">Statut</th><th>Trait&#233; par</th><th>Actions</th>
+          </tr></thead>
+          <tbody id="tbody-demandes"><tr><td colspan="9" style="text-align:center;padding:50px"><div class="spinner"></div></td></tr></tbody>
+        </table>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:14px;flex-wrap:wrap;gap:10px">
+        <span id="count-demandes" style="font-size:13px;color:var(--gris-500)"></span>
+        <div class="pagination" id="pag-demandes"></div>
+      </div>
+    </div>
+
+    <!-- ▸ STAGIAIRES -->
+    <div class="tab-panel" id="tab-stagiaires">
+      <div class="filter-row">
+        <div class="search-bar" style="flex:1;max-width:300px"><span class="icon">&#128269;</span><input type="text" id="search-stag" oninput="filtrerStagiaires()" placeholder="Rechercher&#8230;"></div>
+        <button class="btn btn-outline btn-sm" onclick="exportTableCSV('tbl-stagiaires','stagiaires.csv')">&#11015; CSV</button>
+      </div>
+      <div class="table-wrapper">
+        <table id="tbl-stagiaires">
+          <thead><tr>
+            <th>Nom</th><th>&#201;cole</th><th>Fili&#232;re</th>
+            <th>D&#233;but</th><th>Fin</th><th>Ma&#238;tre de stage</th>
+            <th>Rapports</th><th>Moyenne</th><th>Statut</th><th>Actions</th>
+          </tr></thead>
+          <tbody id="tbody-stagiaires"><tr><td colspan="10" style="text-align:center;padding:50px"><div class="spinner"></div></td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ▸ ÉVALUATIONS -->
+    <div class="tab-panel" id="tab-evaluations">
+      <div id="eval-select-stag" style="margin-bottom:20px">
+        <p style="color:var(--gris-500);font-size:14px">S&#233;lectionnez un stagiaire dans l&#39;onglet <strong>Stagiaires</strong> pour voir et saisir ses &#233;valuations.</p>
+      </div>
+      <div id="eval-content" style="display:none">
+        <div class="profil-card" id="eval-profil-card"></div>
+        <!-- Formulaire évaluation -->
+        <div class="card" style="margin-bottom:20px">
+          <div class="card-header"><span class="card-title">&#128221; Saisir une &#233;valuation</span></div>
+          <div style="padding:0 0 16px">
+            <div class="form-group">
+              <label class="form-label">Semaine</label>
+              <select class="form-control" id="eval-semaine" style="max-width:120px">
+                <option value="1">Semaine 1</option><option value="2">Semaine 2</option>
+                <option value="3">Semaine 3</option><option value="4">Semaine 4</option>
+                <option value="5">Semaine 5</option><option value="6">Semaine 6</option>
+                <option value="7">Semaine 7</option><option value="8">Semaine 8</option>
+                <option value="9">Semaine 9</option><option value="10">Semaine 10</option>
+                <option value="11">Semaine 11</option><option value="12">Semaine 12</option>
+              </select>
+            </div>
+            <div class="stars-row">
+              <div class="star-group"><div class="star-label">Qualit&#233; du travail</div><div class="star-input" id="stars-travail"></div></div>
+              <div class="star-group"><div class="star-label">Ponctualit&#233;</div><div class="star-input" id="stars-ponctualite"></div></div>
+              <div class="star-group"><div class="star-label">Initiative</div><div class="star-input" id="stars-initiative"></div></div>
+              <div class="star-group"><div class="star-label">Communication</div><div class="star-input" id="stars-communication"></div></div>
+              <div class="star-group"><div class="star-label">Technique</div><div class="star-input" id="stars-technique"></div></div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Commentaire</label>
+              <textarea class="form-control" id="eval-commentaire" rows="3" placeholder="Observations&#8230;"></textarea>
+            </div>
+            <button class="btn btn-primary" onclick="soumettreEvaluation()">&#11088; Enregistrer l&#39;&#233;valuation</button>
+          </div>
+        </div>
+        <!-- Historique évaluations -->
+        <div class="card">
+          <div class="card-header"><span class="card-title">&#128200; Historique des &#233;valuations</span></div>
+          <div class="table-wrapper">
+            <table><thead><tr><th>Semaine</th><th>Travail</th><th>Ponctualit&#233;</th><th>Initiative</th><th>Communication</th><th>Technique</th><th>Moy.</th><th>Commentaire</th></tr></thead>
+            <tbody id="tbody-evaluations"><tr><td colspan="8" style="text-align:center;padding:30px;color:var(--gris-500)">Aucune &#233;valuation</td></tr></tbody>
+          </table></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ▸ RAPPORTS -->
+    <div class="tab-panel" id="tab-rapports">
+      <div id="rapp-select-stag" style="margin-bottom:20px">
+        <p style="color:var(--gris-500);font-size:14px">S&#233;lectionnez un stagiaire dans l&#39;onglet <strong>Stagiaires</strong> pour voir ses rapports.</p>
+      </div>
+      <div id="rapp-content" style="display:none">
+        <div class="profil-card" id="rapp-profil-card"></div>
+        <div class="table-wrapper">
+          <table><thead><tr><th>Semaine</th><th>Titre</th><th>Soumis le</th><th>Statut</th><th>Fichier</th><th>Actions</th></tr></thead>
+          <tbody id="tbody-rapports"><tr><td colspan="6" style="text-align:center;padding:30px;color:var(--gris-500)">Aucun rapport</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ▸ UTILISATEURS -->
+    <div class="tab-panel" id="tab-utilisateurs">
+      <div class="filter-row">
+        <div class="search-bar" style="flex:1;max-width:300px"><span class="icon">&#128269;</span><input type="text" id="search-users" oninput="filtrerUtilisateurs()" placeholder="Rechercher&#8230;"></div>
+      </div>
+      <div class="table-wrapper">
+        <table id="tbl-utilisateurs">
+          <thead><tr><th>#</th><th>Nom</th><th>Email</th><th>R&#244;le</th><th>Derni&#232;re connexion</th><th>Statut</th><th>Actions</th></tr></thead>
+          <tbody id="tbody-users"><tr><td colspan="7" style="text-align:center;padding:50px"><div class="spinner"></div></td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal confirmation -->
+<div class="modal-overlay" id="confirm-modal">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-header"><span class="modal-title" id="confirm-title">Confirmation</span></div>
+    <div class="modal-body"><p id="confirm-message"></p></div>
+    <div class="modal-footer">
+      <button class="btn btn-outline btn-sm" id="confirm-no">Annuler</button>
+      <button class="btn btn-danger btn-sm" id="confirm-yes">Confirmer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal refus avec motif -->
+<div class="modal-overlay" id="modal-refus">
+  <div class="modal" style="max-width:440px">
+    <div class="modal-header"><span class="modal-title">&#10060; Refuser la demande</span><button class="btn-icon" onclick="fermerModal('modal-refus')">&#10005;</button></div>
+    <div class="modal-body">
+      <p style="margin-bottom:14px;color:var(--gris-500)">Un email de refus sera envoy&#233; au candidat.</p>
+      <div class="form-group">
+        <label class="form-label">Motif du refus (optionnel)</label>
+        <textarea class="form-control" id="motif-refus" rows="3" placeholder="Ex: Aucun poste disponible&#8230;"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline btn-sm" onclick="fermerModal('modal-refus')">Annuler</button>
+      <button class="btn btn-danger btn-sm" id="btn-confirmer-refus">Confirmer le refus</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal rapport -->
+<div class="modal-overlay" id="modal-rapport">
+  <div class="modal" style="max-width:580px">
+    <div class="modal-header"><span class="modal-title" id="rapport-modal-titre">Rapport</span><button class="btn-icon" onclick="fermerModal('modal-rapport')">&#10005;</button></div>
+    <div class="modal-body" id="rapport-modal-body"></div>
+    <div class="modal-footer">
+      <div style="display:flex;gap:8px;flex:1">
+        <select class="form-control" id="rapport-statut-select" style="width:150px">
+          <option value="lu">Lu</option>
+          <option value="valide">Valid&#233;</option>
+          <option value="a_revoir">&#192; revoir</option>
+        </select>
+        <input type="text" class="form-control" id="rapport-commentaire-rh" placeholder="Commentaire RH&#8230;">
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="validerRapport()">Enregistrer</button>
+      <button class="btn btn-outline btn-sm" onclick="fermerModal('modal-rapport')">Fermer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal créer compte stagiaire -->
+<div class="modal-overlay" id="modal-compte">
+  <div class="modal" style="max-width:440px">
+    <div class="modal-header"><span class="modal-title">&#128100; Cr&#233;er compte stagiaire</span><button class="btn-icon" onclick="fermerModal('modal-compte')">&#10005;</button></div>
+    <div class="modal-body" id="modal-compte-body"></div>
+    <div class="modal-footer">
+      <button class="btn btn-outline btn-sm" onclick="fermerModal('modal-compte')">Annuler</button>
+      <button class="btn btn-success btn-sm" id="btn-creer-compte">Cr&#233;er le compte</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="js/app.js"></script>
+<script>
+'use strict';
+
+var adminPage    = 1;
+var searchTimer;
+var chartsInit   = false;
+var stagSelId    = null;
+var refusId      = null;
+var rapportCurId = null;
+var compteDemId  = null;
+var stagData     = [];
+var usersData    = [];
+var demandesData = [];
+
+/* ── Cache des données pour les data-attributes ── */
+var _cache = {};
+
+function cacheSet(id, obj) { _cache[String(id)] = obj; }
+function cacheGet(id)      { return _cache[String(id)] || null; }
+
+/* ── Init ── */
+function init() {
+  checkAdminSession().then(function(user) {
+    if (!user) {
+      Toast.warning('Non connecte. Redirection...');
+      setTimeout(function() { window.location.href = 'login.html'; }, 1500);
+      return;
+    }
+    document.getElementById('topbar-user').textContent = user.nom;
+    document.getElementById('admin-badge').innerHTML =
+      '<div class="user-chip"><div class="user-avatar">' + (user.nom[0]||'A') + '</div>'
+      + '<span>' + escHtml(user.nom) + '</span></div>';
+    loadAll();
+  });
+}
+
+function loadAll() {
+  loadStats();
+  loadDemandes();
+  loadStagiaires();
+  loadUtilisateurs();
+}
+
+/* ── Stats ── */
+function loadStats() {
+  API.post('action.php', { action: 'get_stats' }).then(function(r) {
+    if (!r.success) { return; }
+    var s = r.stats;
+    var map = { 'st-total': s.total, 'st-attente': s.en_attente,
+                'st-accepte': s.acceptees, 'st-refuse': s.refusees,
+                'st-actifs': s.stagiaires_actifs };
+    for (var id in map) {
+      var el = document.getElementById(id);
+      if (el) { animateCounter(el, map[id] || 0); }
+    }
+    if (!chartsInit) { renderCharts(s, r.evolution, r.filieres); chartsInit = true; }
+    var ws = document.getElementById('week-summary');
+    var last = r.evolution && r.evolution.length ? r.evolution[r.evolution.length-1] : null;
+    ws.innerHTML = last
+      ? '<div style="font-size:42px;font-weight:800;color:var(--bleu)">' + last.total + '</div>'
+        + '<div style="color:var(--gris-500);margin-top:6px">Demandes ce mois</div>'
+      : '<div style="color:var(--gris-500)">Pas de donnees</div>';
+  }).catch(function(err) { console.error('[admin] Stats:', err); });
+}
+
+function renderCharts(s, evolution, filieres) {
+  new Chart(document.getElementById('chart-donut'), {
+    type: 'doughnut',
+    data: {
+      labels: ['En attente','Acceptees','Refusees'],
+      datasets: [{ data:[s.en_attente, s.acceptees, s.refusees],
+        backgroundColor:['#fef3c7','#d1fae5','#fee2e2'],
+        borderColor:['#d97706','#059669','#dc2626'], borderWidth:2 }]
+    },
+    options: { responsive:true, plugins:{ legend:{ position:'bottom' } }, cutout:'60%' }
+  });
+
+  if (evolution && evolution.length) {
+    var labels = [], vals = [];
+    for (var i = 0; i < evolution.length; i++) {
+      var p = evolution[i].mois.split('-');
+      labels.push(new Date(parseInt(p[0]), parseInt(p[1])-1)
+        .toLocaleDateString('fr-FR',{month:'short',year:'2-digit'}));
+      vals.push(evolution[i].total);
+    }
+    new Chart(document.getElementById('chart-line'), {
+      type: 'line',
+      data: { labels:labels, datasets:[{ label:'Demandes', data:vals,
+        borderColor:'#1a56db', backgroundColor:'rgba(26,86,219,.1)',
+        tension:.4, fill:true, pointRadius:4 }] },
+      options: { responsive:true, plugins:{legend:{display:false}},
+        scales:{ y:{beginAtZero:true,ticks:{stepSize:1}}, x:{grid:{display:false}} } }
+    });
+  }
+
+  if (filieres && filieres.length) {
+    var fl = [], fv = [];
+    for (var j = 0; j < filieres.length; j++) {
+      fl.push(filieres[j].filiere); fv.push(filieres[j].total);
+    }
+    new Chart(document.getElementById('chart-filieres'), {
+      type: 'bar',
+      data: { labels:fl, datasets:[{ data:fv,
+        backgroundColor:'rgba(26,86,219,.2)', borderColor:'#1a56db',
+        borderWidth:2, borderRadius:6 }] },
+      options: { indexAxis:'y', responsive:true, plugins:{legend:{display:false}},
+        scales:{x:{beginAtZero:true,ticks:{stepSize:1}},y:{grid:{display:false}}} }
+    });
+  }
+}
+
+/* ── Demandes ── */
+function loadDemandes() {
+  var statut = document.getElementById('filter-statut').value;
+  var search = document.getElementById('search-admin').value.trim();
+  API.post('action.php', {
+    action:'get_demandes', page:adminPage, statut:statut, search:search
+  }).then(function(r) {
+    if (!r.success) {
+      document.getElementById('tbody-demandes').innerHTML =
+        '<tr><td colspan="9" style="text-align:center;padding:40px;color:var(--rouge)">Erreur : ' + escHtml(r.message) + '</td></tr>';
+      return;
+    }
+    demandesData = r.demandes;
+    r.demandes.forEach(function(d) { cacheSet('dem_' + d.id, d); });
+    renderDemandes(r.demandes);
+    renderPag(r.pages, r.page, r.total, 'count-demandes', 'pag-demandes', 'goPageDem');
+  }).catch(function(err) {
+    document.getElementById('tbody-demandes').innerHTML =
+      '<tr><td colspan="9" style="text-align:center;padding:40px;color:var(--rouge)">'
+      + escHtml(apiErrMsg(err)) + '</td></tr>';
+    console.error('[admin] Demandes:', err);
+  });
+}
+
+function renderDemandes(list) {
+  var tbody = document.getElementById('tbody-demandes');
+  if (!list || !list.length) {
+    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:40px;color:var(--gris-500)">Aucune demande</td></tr>';
+    return;
+  }
+  var rows = [];
+  for (var i = 0; i < list.length; i++) {
+    var d = list[i];
+    /* Utiliser data-id au lieu de passer des chaînes en onclick */
+    var actBtns = '';
+    if (d.cv_fichier) {
+      actBtns += '<a class="btn btn-outline btn-sm" href="uploads/' + escHtml(d.cv_fichier)
+               + '" target="_blank">&#128196;</a> ';
+    }
+    if (d.statut === 'en_attente') {
+      actBtns += '<button class="btn btn-success btn-sm js-accepter" data-id="' + d.id + '">&#9989;</button> '
+               + '<button class="btn btn-danger btn-sm js-refuser"   data-id="' + d.id + '">&#10060;</button> ';
+    }
+    if (d.statut === 'accepte') {
+      actBtns += '<button class="btn btn-outline btn-sm js-creer-compte" data-id="' + d.id + '" title="Creer compte">&#128100;+</button> ';
+    }
+    actBtns += '<button class="btn btn-outline btn-sm js-supprimer" data-id="' + d.id
+             + '" style="color:var(--rouge)">&#128465;</button>';
+
+    rows.push(
+      '<tr>'
+      + '<td>#' + d.id + '</td>'
+      + '<td><strong>' + escHtml(d.nom_complet) + '</strong></td>'
+      + '<td><small>' + escHtml(d.email) + '</small></td>'
+      + '<td>' + escHtml(d.ecole) + '</td>'
+      + '<td>' + escHtml(d.filiere) + '</td>'
+      + '<td>' + formatDate(d.date_souhaitee) + '</td>'
+      + '<td>' + badgeStatut(d.statut) + '</td>'
+      + '<td>' + (d.traite_par_nom
+          ? escHtml(d.traite_par_nom)
+          : '<span style="color:var(--gris-300)">&#8212;</span>') + '</td>'
+      + '<td><div style="display:flex;gap:4px;flex-wrap:wrap">' + actBtns + '</div></td>'
+      + '</tr>'
+    );
+  }
+  tbody.innerHTML = rows.join('');
+}
+
+function goPageDem(p) { adminPage = p; loadDemandes(); }
+
+/* ── Délégation d'événements sur le tableau demandes ── */
+document.addEventListener('click', function(e) {
+  var btn = e.target.closest
+    ? e.target.closest('.js-accepter, .js-refuser, .js-creer-compte, .js-supprimer,'+
+                        '.js-voir-eval, .js-voir-rapports, .js-toggle-user')
+    : null;
+  if (!btn) { return; }
+  var id = parseInt(btn.getAttribute('data-id'));
+
+  if (btn.classList.contains('js-accepter')) {
+    var d = cacheGet('dem_' + id);
+    var nom = d ? d.nom_complet : '#' + id;
+    confirmDialog('Accepter la demande de ' + nom + ' ?', 'Accepter').then(function(ok) {
+      if (!ok) { return; }
+      API.post('action.php', { action:'accepter', id:id }).then(function(r) {
+        r.success ? (Toast.success(r.message), loadAll()) : Toast.error(r.message);
+      }).catch(function(err) { if (err.message !== 'redirect') Toast.error(apiErrMsg(err)); });
+    });
+  }
+
+  if (btn.classList.contains('js-refuser')) {
+    refusId = id;
+    document.getElementById('motif-refus').value = '';
+    document.getElementById('modal-refus').classList.add('open');
+  }
+
+  if (btn.classList.contains('js-creer-compte')) {
+    var d2 = cacheGet('dem_' + id);
+    compteDemId = id;
+    document.getElementById('modal-compte-body').innerHTML =
+      '<p>Creer un compte stagiaire pour :</p>'
+      + '<p style="font-weight:700;margin:10px 0">' + escHtml(d2 ? d2.nom_complet : '') + '</p>'
+      + '<p style="color:var(--gris-500);font-size:13px">Email : ' + escHtml(d2 ? d2.email : '') + '</p>'
+      + '<p style="color:var(--gris-500);font-size:13px">Mot de passe temporaire : <strong>Stage'
+      + new Date().getFullYear() + '!</strong></p>';
+    document.getElementById('modal-compte').classList.add('open');
+  }
+
+  if (btn.classList.contains('js-supprimer')) {
+    var d3 = cacheGet('dem_' + id);
+    var nom3 = d3 ? d3.nom_complet : '#' + id;
+    confirmDialog('Supprimer definitivement la demande de ' + nom3 + ' ?', 'Supprimer').then(function(ok) {
+      if (!ok) { return; }
+      API.post('action.php', { action:'supprimer', id:id }).then(function(r) {
+        r.success ? (Toast.success(r.message), loadAll()) : Toast.error(r.message);
+      }).catch(function(err) { if (err.message !== 'redirect') Toast.error(apiErrMsg(err)); });
+    });
+  }
+
+  if (btn.classList.contains('js-voir-eval')) {
+    var s4 = cacheGet('stag_' + id);
+    voirEvaluations(id, s4 ? s4.nom_complet : '#' + id);
+  }
+
+  if (btn.classList.contains('js-voir-rapports')) {
+    var s5 = cacheGet('stag_' + id);
+    voirRapports(id, s5 ? s5.nom_complet : '#' + id);
+  }
+
+  if (btn.classList.contains('js-toggle-user')) {
+    var actif = parseInt(btn.getAttribute('data-actif'));
+    var nom6  = btn.getAttribute('data-nom') || '#' + id;
+    var msg   = actif ? 'Desactiver le compte de ' + nom6 + ' ?' : 'Activer le compte de ' + nom6 + ' ?';
+    confirmDialog(msg, 'Modifier le compte').then(function(ok) {
+      if (!ok) { return; }
+      API.post('admin_rh.php', { action:'toggle_utilisateur', user_id:id }).then(function(r) {
+        r.success ? (Toast.success('Compte mis a jour.'), loadUtilisateurs()) : Toast.error(r.message);
+      }).catch(function(err) { Toast.error(apiErrMsg(err)); });
+    });
+  }
+});
+
+/* ── Modals refus et compte ── */
+function _bindModal() {
+  var btnRefus = document.getElementById('btn-confirmer-refus');
+  if (btnRefus) {
+    btnRefus.addEventListener('click', function() {
+      if (!refusId) { return; }
+      var motif = document.getElementById('motif-refus').value.trim();
+      fermerModal('modal-refus');
+      API.post('action.php', { action:'refuser', id:refusId, motif:motif }).then(function(r) {
+        r.success ? (Toast.success(r.message), loadAll()) : Toast.error(r.message);
+      }).catch(function(err) { if (err.message !== 'redirect') Toast.error(apiErrMsg(err)); });
+      refusId = null;
+    });
+  }
+
+  var btnCompte = document.getElementById('btn-creer-compte');
+  if (btnCompte) {
+    btnCompte.addEventListener('click', function() {
+      if (!compteDemId) { return; }
+      fermerModal('modal-compte');
+      API.post('admin_rh.php', { action:'creer_compte_stagiaire', demande_id:compteDemId }).then(function(r) {
+        if (r.success) {
+          Toast.success('Compte cree ! Email : ' + r.email + ' — Mdp : ' + r.mdp_temporaire);
+          loadAll();
+        } else { Toast.error(r.message); }
+      }).catch(function(err) { Toast.error(apiErrMsg(err)); });
+      compteDemId = null;
+    });
+  }
+}
+
+/* ── Stagiaires ── */
+function loadStagiaires() {
+  API.post('admin_rh.php', { action:'get_stagiaires_complet' }).then(function(r) {
+    if (!r.success) { return; }
+    stagData = r.stagiaires;
+    stagData.forEach(function(s) { cacheSet('stag_' + s.id, s); });
+    renderStagiaires(stagData);
+  }).catch(function(err) { console.error('[admin] Stagiaires:', err); });
+}
+
+function renderStagiaires(list) {
+  var tbody = document.getElementById('tbody-stagiaires');
+  if (!list || !list.length) {
+    tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;padding:40px;color:var(--gris-500)">Aucun stagiaire</td></tr>';
+    return;
+  }
+  var rows = [];
+  for (var i = 0; i < list.length; i++) {
+    var s = list[i];
+    var moy      = s.moyenne_eval ? s.moyenne_eval + '/20' : '&#8212;';
+    var moyColor = s.moyenne_eval
+      ? (s.moyenne_eval >= 14 ? 'var(--vert)' : s.moyenne_eval >= 10 ? 'var(--orange)' : 'var(--rouge)')
+      : 'var(--gris-500)';
+    rows.push(
+      '<tr>'
+      + '<td><strong>' + escHtml(s.nom_complet) + '</strong><br>'
+      + '<small style="color:var(--gris-500)">' + escHtml(s.email) + '</small></td>'
+      + '<td>' + escHtml(s.ecole)  + '</td>'
+      + '<td>' + escHtml(s.filiere) + '</td>'
+      + '<td>' + formatDate(s.date_debut) + '</td>'
+      + '<td>' + (s.date_fin ? formatDate(s.date_fin) : '&#8212;') + '</td>'
+      + '<td>' + escHtml(s.maitre_stage || 'M.BENJAMIN') + '</td>'
+      + '<td style="text-align:center">' + (s.nb_rapports || 0) + '</td>'
+      + '<td style="color:' + moyColor + ';font-weight:700">' + moy + '</td>'
+      + '<td>' + badgeStatut(s.statut) + '</td>'
+      + '<td><div style="display:flex;gap:4px">'
+      + '<button class="btn btn-outline btn-sm js-voir-eval" data-id="' + s.id + '" title="Evaluations">&#11088;</button>'
+      + '<button class="btn btn-outline btn-sm js-voir-rapports" data-id="' + s.id + '" title="Rapports">&#128196;</button>'
+      + '</div></td>'
+      + '</tr>'
+    );
+  }
+  tbody.innerHTML = rows.join('');
+}
+
+function filtrerStagiaires() {
+  var q = document.getElementById('search-stag').value.toLowerCase();
+  renderStagiaires(stagData.filter(function(s) {
+    return (s.nom_complet + s.email + s.ecole + s.filiere).toLowerCase().indexOf(q) !== -1;
+  }));
+}
+
+/* ── Évaluations ── */
+function voirEvaluations(stagId, nom) {
+  stagSelId = stagId;
+  switchTab('evaluations');
+  document.getElementById('eval-select-stag').style.display = 'none';
+  document.getElementById('eval-content').style.display     = 'block';
+  document.getElementById('eval-profil-card').innerHTML =
+    '<div class="avatar-lg">' + (nom ? nom[0] : 'S') + '</div>'
+    + '<div><div style="font-weight:700;font-size:16px">' + escHtml(nom) + '</div>'
+    + '<div style="color:var(--gris-500);font-size:13px">Evaluation stagiaire</div></div>';
+
+  var criteres = ['travail','ponctualite','initiative','communication','technique'];
+  for (var i = 0; i < criteres.length; i++) {
+    (function(crit) {
+      var cont = document.getElementById('stars-' + crit);
+      if (!cont) { return; }
+      var h = '';
+      for (var n = 5; n >= 1; n--) {
+        h += '<input type="radio" name="star-' + crit + '" id="star-' + crit + '-' + n
+           + '" value="' + n + '">'
+           + '<label for="star-' + crit + '-' + n + '" title="' + n + '">&#9733;</label>';
+      }
+      cont.innerHTML = h;
+    })(criteres[i]);
+  }
+  loadEvaluations(stagId);
+}
+
+function loadEvaluations(stagId) {
+  API.post('admin_rh.php', { action:'get_evaluations_stagiaire', stagiaire_id:stagId }).then(function(r) {
+    var tbody = document.getElementById('tbody-evaluations');
+    if (!r.success || !r.evaluations.length) {
+      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:30px;color:var(--gris-500)">Aucune evaluation</td></tr>';
+      return;
+    }
+    var rows = [];
+    for (var i = 0; i < r.evaluations.length; i++) {
+      var e = r.evaluations[i];
+      var notes = [e.note_travail, e.note_ponctualite, e.note_initiative, e.note_communication, e.note_technique];
+      var sum = 0;
+      for (var j = 0; j < notes.length; j++) { sum += parseFloat(notes[j] || 0); }
+      var moy = ((sum / 5) * 4).toFixed(1);
+      rows.push('<tr><td>S' + e.semaine + '</td>'
+        + '<td>' + etoiles(e.note_travail)       + '</td>'
+        + '<td>' + etoiles(e.note_ponctualite)    + '</td>'
+        + '<td>' + etoiles(e.note_initiative)     + '</td>'
+        + '<td>' + etoiles(e.note_communication)  + '</td>'
+        + '<td>' + etoiles(e.note_technique)      + '</td>'
+        + '<td style="font-weight:700">' + moy + '/20</td>'
+        + '<td style="font-size:12px;color:var(--gris-500)">' + escHtml(e.commentaire || '&#8212;') + '</td></tr>');
+    }
+    tbody.innerHTML = rows.join('');
+  }).catch(function(err) { console.error('[admin] Eval:', err); });
+}
+
+function etoiles(n) {
+  var s = ''; n = parseInt(n) || 0;
+  for (var i = 1; i <= 5; i++) { s += (i <= n) ? '&#9733;' : '&#9734;'; }
+  return '<span style="color:#f59e0b">' + s + '</span>';
+}
+
+function soumettreEvaluation() {
+  if (!stagSelId) { Toast.warning('Selectionnez un stagiaire.'); return; }
+  var criteres = ['travail','ponctualite','initiative','communication','technique'];
+  var data = {
+    action:'evaluer_stagiaire',
+    stagiaire_id: stagSelId,
+    semaine: parseInt(document.getElementById('eval-semaine').value),
+    commentaire: document.getElementById('eval-commentaire').value.trim()
+  };
+  for (var i = 0; i < criteres.length; i++) {
+    var sel = document.querySelector('input[name="star-' + criteres[i] + '"]:checked');
+    data['note_' + criteres[i]] = sel ? parseInt(sel.value) : 0;
+  }
+  API.post('admin_rh.php', data).then(function(r) {
+    r.success
+      ? (Toast.success(r.message), loadEvaluations(stagSelId), loadStagiaires())
+      : Toast.error(r.message);
+  }).catch(function(err) { Toast.error(apiErrMsg(err)); });
+}
+
+/* ── Rapports ── */
+function voirRapports(stagId, nom) {
+  stagSelId = stagId;
+  switchTab('rapports');
+  document.getElementById('rapp-select-stag').style.display = 'none';
+  document.getElementById('rapp-content').style.display     = 'block';
+  document.getElementById('rapp-profil-card').innerHTML =
+    '<div class="avatar-lg">' + (nom ? nom[0] : 'S') + '</div>'
+    + '<div><div style="font-weight:700;font-size:16px">' + escHtml(nom) + '</div>'
+    + '<div style="color:var(--gris-500);font-size:13px">Rapports hebdomadaires</div></div>';
+  loadRapports(stagId);
+}
+
+function loadRapports(stagId) {
+  API.post('admin_rh.php', { action:'get_rapports_stagiaire', stagiaire_id:stagId }).then(function(r) {
+    var tbody = document.getElementById('tbody-rapports');
+    if (!r.success || !r.rapports.length) {
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--gris-500)">Aucun rapport soumis</td></tr>';
+      return;
+    }
+    r.rapports.forEach(function(rap) { cacheSet('rap_' + rap.id, rap); });
+    var rows = [];
+    for (var i = 0; i < r.rapports.length; i++) {
+      var rap = r.rapports[i];
+      rows.push('<tr>'
+        + '<td>S' + rap.semaine + '</td>'
+        + '<td><strong>' + escHtml(rap.titre) + '</strong></td>'
+        + '<td>' + formatDate(rap.soumis_le) + '</td>'
+        + '<td><span class="badge badge-' + rap.statut + '">' + escHtml(rap.statut) + '</span></td>'
+        + '<td>' + (rap.fichier
+            ? '<a href="uploads/rapports/' + escHtml(rap.fichier) + '" target="_blank">&#128196; PDF</a>'
+            : '&#8212;') + '</td>'
+        + '<td><button class="btn btn-outline btn-sm js-lire-rapport" data-id="' + rap.id + '">&#128065;&#65039; Lire</button></td>'
+        + '</tr>');
+    }
+    tbody.innerHTML = rows.join('');
+  }).catch(function(err) { console.error('[admin] Rapports:', err); });
+}
+
+document.addEventListener('click', function(e) {
+  var btn = e.target.closest ? e.target.closest('.js-lire-rapport') : null;
+  if (!btn) { return; }
+  var rap = cacheGet('rap_' + btn.getAttribute('data-id'));
+  if (!rap) { return; }
+  rapportCurId = rap.id;
+  document.getElementById('rapport-modal-titre').textContent = 'Rapport — ' + rap.titre;
+  document.getElementById('rapport-modal-body').innerHTML =
+    '<p style="white-space:pre-wrap;font-size:14px;line-height:1.7;color:var(--gris-700)">'
+    + escHtml(rap.contenu) + '</p>'
+    + (rap.commentaire_rh
+        ? '<div style="margin-top:14px;padding:12px;background:var(--bleu-clair);border-radius:var(--radius-sm);font-size:13px">'
+          + '<strong>Commentaire RH :</strong> ' + escHtml(rap.commentaire_rh) + '</div>'
+        : '');
+  document.getElementById('rapport-statut-select').value    = rap.statut;
+  document.getElementById('rapport-commentaire-rh').value   = rap.commentaire_rh || '';
+  document.getElementById('modal-rapport').classList.add('open');
+});
+
+function validerRapport() {
+  if (!rapportCurId) { return; }
+  API.post('admin_rh.php', {
+    action: 'noter_rapport',
+    rapport_id: rapportCurId,
+    statut: document.getElementById('rapport-statut-select').value,
+    commentaire_rh: document.getElementById('rapport-commentaire-rh').value.trim()
+  }).then(function(r) {
+    r.success
+      ? (Toast.success(r.message), fermerModal('modal-rapport'), loadRapports(stagSelId))
+      : Toast.error(r.message);
+  }).catch(function(err) { Toast.error(apiErrMsg(err)); });
+}
+
+/* ── Utilisateurs ── */
+function loadUtilisateurs() {
+  API.post('admin_rh.php', { action:'get_profils_utilisateurs' }).then(function(r) {
+    if (!r.success) { return; }
+    usersData = r.utilisateurs;
+    renderUtilisateurs(usersData);
+  }).catch(function(err) { console.error('[admin] Users:', err); });
+}
+
+function renderUtilisateurs(list) {
+  var tbody = document.getElementById('tbody-users');
+  if (!list || !list.length) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--gris-500)">Aucun utilisateur</td></tr>';
+    return;
+  }
+  var rows = [];
+  for (var i = 0; i < list.length; i++) {
+    var u = list[i];
+    var badge = u.role === 'super_admin'
+      ? '<span class="badge" style="background:#ede9fe;color:#6d28d9">Super Admin</span>'
+      : u.role === 'admin'
+        ? '<span class="badge badge-attente">Admin</span>'
+        : '<span class="badge badge-accepte">Stagiaire</span>';
+    rows.push('<tr>'
+      + '<td>#' + u.id + '</td>'
+      + '<td><strong>' + escHtml(u.nom) + '</strong></td>'
+      + '<td><small>' + escHtml(u.email) + '</small></td>'
+      + '<td>' + badge + '</td>'
+      + '<td>' + (u.dernier_login ? formatDate(u.dernier_login) : '&#8212;') + '</td>'
+      + '<td>' + (u.actif
+          ? '<span class="badge badge-accepte">Actif</span>'
+          : '<span class="badge badge-refuse">Inactif</span>') + '</td>'
+      + '<td><button class="btn btn-outline btn-sm js-toggle-user" data-id="' + u.id
+      + '" data-actif="' + u.actif + '" data-nom="' + escHtml(u.nom) + '">'
+      + (u.actif ? '&#128274; Desactiver' : '&#128275; Activer')
+      + '</button></td>'
+      + '</tr>');
+  }
+  tbody.innerHTML = rows.join('');
+}
+
+function filtrerUtilisateurs() {
+  var q = document.getElementById('search-users').value.toLowerCase();
+  renderUtilisateurs(usersData.filter(function(u) {
+    return (u.nom + u.email + u.role).toLowerCase().indexOf(q) !== -1;
+  }));
+}
+
+/* ── Pagination ── */
+function renderPag(pages, page, total, countId, pagId, fnName) {
+  var cEl = document.getElementById(countId);
+  if (cEl) { cEl.textContent = (total || 0) + ' resultat(s)'; }
+  var el = document.getElementById(pagId);
+  if (!el || pages <= 1) { if (el) { el.innerHTML = ''; } return; }
+  var h = '<button onclick="' + fnName + '(' + (page-1) + ')" ' + (page===1?'disabled':'') + '>\u2039</button>';
+  for (var i = 1; i <= pages; i++) {
+    h += '<button class="' + (i===page?'active':'') + '" onclick="' + fnName + '(' + i + ')">' + i + '</button>';
+  }
+  h += '<button onclick="' + fnName + '(' + (page+1) + ')" ' + (page===pages?'disabled':'') + '>\u203a</button>';
+  el.innerHTML = h;
+}
+
+/* ── Onglets ── */
+function switchTab(name) {
+  var btns   = document.querySelectorAll('.tab-btn');
+  var panels = document.querySelectorAll('.tab-panel');
+  for (var i = 0; i < btns.length;   i++) { btns[i].classList.remove('active'); }
+  for (var j = 0; j < panels.length; j++) { panels[j].classList.remove('active'); }
+  var btn = document.querySelector('.tab-btn[onclick="switchTab(\'' + name + '\')"]');
+  if (btn) { btn.classList.add('active'); }
+  var panel = document.getElementById('tab-' + name);
+  if (panel) { panel.classList.add('active'); }
+}
+
+function fermerModal(id) {
+  var el = document.getElementById(id);
+  if (el) { el.classList.remove('open'); }
+}
+
+/* ── DOMContentLoaded ── */
+document.addEventListener('DOMContentLoaded', function() {
+  _bindModal();
+  document.getElementById('search-admin').addEventListener('input', function() {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(function() { adminPage = 1; loadDemandes(); }, 300);
+  });
+  initSortableTable('tbl-demandes');
+  init();
+  setInterval(loadAll, 60000);
+});
+</script>
+</body>
+</html>

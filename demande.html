@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Demande de stage — MVENGINEERING</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .form-page { max-width: 780px; margin: 0 auto; padding: 80px 24px 48px; }
+    .form-page-header { text-align:center; margin-bottom: 36px; }
+    .form-page-header h1 { font-size: 28px; font-weight: 800; color: var(--gris-900); }
+    .form-page-header p  { color: var(--gris-500); margin-top: 8px; }
+    .form-section-title  { font-size: 15px; font-weight: 700; color: var(--bleu); margin: 24px 0 16px; padding-bottom: 8px; border-bottom: 2px solid var(--bleu-clair); }
+    .upload-zone { border: 2px dashed var(--gris-300); border-radius: var(--radius-sm); padding: 32px 20px; text-align:center; cursor:pointer; background: var(--gris-100); transition: all .25s; }
+    .upload-zone:hover, .upload-zone.dragover { border-color: var(--bleu); background: var(--bleu-clair); }
+    .upload-zone.has-file { border-color: var(--vert); background: var(--vert-clair); }
+    .upload-icon { font-size: 36px; margin-bottom: 8px; }
+    .upload-text { font-size: 14px; color: var(--gris-500); }
+    .upload-file-name { font-weight: 600; color: var(--vert); margin-top: 8px; font-size: 13px; }
+    .progress-bar { height: 6px; background: var(--gris-200); border-radius: 3px; margin-top: 20px; display:none; }
+    .progress-fill { height: 100%; background: var(--bleu); border-radius: 3px; width: 0; transition: width .3s; }
+    .success-screen { display: none; text-align: center; padding: 48px; }
+    .success-screen .icon { font-size: 72px; margin-bottom: 16px; }
+    .success-screen h2  { font-size: 24px; font-weight: 800; color: var(--gris-900); margin-bottom: 8px; }
+    .success-screen p   { color: var(--gris-500); max-width: 400px; margin: 0 auto 24px; }
+  </style>
+</head>
+<body>
+
+<button class="hamburger-btn" id="hamburger-btn" aria-label="Menu"><span></span><span></span><span></span></button>
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-header"><div class="sidebar-logo"><div class="icon">🎓</div>MVENGINEERING</div><div class="sidebar-sub">Gestion des stagiaires</div></div>
+  <nav>
+    <a href="index.html"><span class="nav-icon">&#127968;</span>Accueil</a>
+    <a href="demande.html" class="active"><span class="nav-icon">&#128221;</span>Demande de stage</a>
+    <a href="reception.html"><span class="nav-icon">&#128203;</span>R&#233;ception</a>
+    <a href="admin.html"><span class="nav-icon">&#128202;</span>Administration</a>
+    <a href="login.html"><span class="nav-icon">&#128272;</span>Connexion Admin</a>
+    <a href="login-stagiaire.html"><span class="nav-icon">&#129333;</span>Espace Stagiaire</a>
+    <a href="#" onclick="logout()"><span class="nav-icon">&#128682;</span>D&#233;connexion</a>
+  </nav>
+  <div class="sidebar-footer">© 2025 MVENGINEERING</div>
+</aside>
+<div class="sidebar-overlay" id="sidebar-overlay"></div>
+<div id="toast-container"></div>
+
+<div class="form-page">
+  <div class="form-page-header">
+    <div style="font-size:48px;margin-bottom:12px">📝</div>
+    <h1>Demande de stage</h1>
+    <p>Remplissez ce formulaire pour déposer votre candidature. Tous les champs marqués <span style="color:var(--rouge)">*</span> sont obligatoires.</p>
+  </div>
+
+  <div class="card" id="form-card">
+    <form id="demande-form" novalidate>
+      <!-- Informations personnelles -->
+      <div class="form-section-title">👤 Informations personnelles</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label" for="nom_complet">Nom complet <span class="required">*</span></label>
+          <input type="text" class="form-control" id="nom_complet" name="nom_complet" placeholder="Ex : Jean-Pierre Mballa" required>
+          <div class="form-error" id="err-nom"></div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="email">Adresse email <span class="required">*</span></label>
+          <input type="email" class="form-control" id="email" name="email" placeholder="exemple@email.com" required>
+          <div class="form-error" id="err-email"></div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="telephone">Téléphone <span class="required">*</span></label>
+        <input type="tel" class="form-control" id="telephone" name="telephone" placeholder="+237 6XX XXX XXX" required style="max-width:280px">
+        <div class="form-error" id="err-tel"></div>
+      </div>
+
+      <!-- Informations académiques -->
+      <div class="form-section-title">🎓 Informations académiques</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label" for="ecole">École / Université <span class="required">*</span></label>
+          <input type="text" class="form-control" id="ecole" name="ecole" placeholder="Ex : Université de Yaoundé I" required>
+          <div class="form-error" id="err-ecole"></div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="filiere">Filière <span class="required">*</span></label>
+          <input type="text" class="form-control" id="filiere" name="filiere" placeholder="Ex : Informatique, Gestion…" required>
+          <div class="form-error" id="err-filiere"></div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="niveau">Niveau d'étude <span class="required">*</span></label>
+        <select class="form-control" id="niveau" name="niveau" required style="max-width:280px">
+          <option value="">— Sélectionner —</option>
+          <option>PROBATOIRE</option>
+          <option>Licence 1</option>
+          <option>Licence 2</option>
+          <option>Licence 3</option>
+          <option>BTS</option>
+        </select>
+        <div class="form-error" id="err-niveau"></div>
+      </div>
+
+      <!-- Stage -->
+      <div class="form-section-title">📅 Informations sur le stage</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label" for="date_souhaitee">Date de début souhaitée <span class="required">*</span></label>
+          <input type="date" class="form-control" id="date_souhaitee" name="date_souhaitee" required>
+          <div class="form-error" id="err-date"></div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="duree">Durée du stage <span class="required">*</span></label>
+          <select class="form-control" id="duree" name="duree" required>
+            <option value="">— Sélectionner —</option>
+            <option value="1 mois">1 mois</option>
+            <option value="2 mois">2 mois</option>
+            <option value="3 mois">3 mois</option>
+            <option value="4 mois">4 mois</option>
+            <option value="5 mois">5 mois</option>
+            <option value="6 mois">6 mois</option>
+            <option value="Plus de 6 mois">Plus de 6 mois</option>
+          </select>
+          <div class="form-error" id="err-duree"></div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="message">Message de motivation</label>
+        <textarea class="form-control" id="message" name="message" placeholder="Présentez-vous brièvement et expliquez votre motivation pour ce stage…" rows="4"></textarea>
+      </div>
+
+      <!-- CV -->
+      <div class="form-section-title">📄 Curriculum Vitae</div>
+      <div class="form-group">
+        <div class="upload-zone" id="upload-zone" onclick="document.getElementById('cv').click()">
+          <div class="upload-icon">📎</div>
+          <div class="upload-text">Cliquez ou glissez votre CV ici</div>
+          <div class="upload-text" style="font-size:12px;margin-top:4px">Format PDF uniquement — 5 Mo maximum</div>
+          <div class="upload-file-name" id="file-name"></div>
+          <input type="file" id="cv" name="cv" accept=".pdf,application/pdf" hidden>
+        </div>
+      </div>
+
+      <div class="progress-bar" id="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-top:8px">
+        <p style="font-size:13px;color:var(--gris-500)">Vos données sont traitées conformément à notre politique de confidentialité.</p>
+        <button type="submit" class="btn btn-primary" id="submit-btn" style="min-width:180px">
+          <span>Soumettre ma candidature</span>
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Écran succès -->
+  <div class="card success-screen" id="success-screen">
+    <div class="icon">✅</div>
+    <h2>Candidature soumise !</h2>
+    <p>Votre demande de stage a bien été enregistrée. Vous recevrez une réponse sous <strong>5 jours ouvrés</strong> à l'adresse email fournie.</p>
+    <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+      <a href="index.html" class="btn btn-outline">🏠 Retour à l'accueil</a>
+      <button class="btn btn-primary" onclick="resetForm()">📝 Nouvelle demande</button>
+    </div>
+  </div>
+</div>
+
+<footer><p>© 2025 MVENG ENGINEERING · <a href=" info@mvengi.com  ">contact@mvengineering.cm</a></p></footer>
+
+<script src="js/app.js"></script>
+<script>
+'use strict';
+
+// ─── Date minimum = demain ────────────────────────────────────
+const dateInput = document.getElementById('date_souhaitee');
+const tomorrow  = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
+dateInput.min   = tomorrow.toISOString().split('T')[0];
+
+// ─── Upload drag & drop ───────────────────────────────────────
+const zone    = document.getElementById('upload-zone');
+const fileInp = document.getElementById('cv');
+const fileNm  = document.getElementById('file-name');
+
+fileInp.addEventListener('change', () => handleFile(fileInp.files[0]));
+zone.addEventListener('dragover',  e => { e.preventDefault(); zone.classList.add('dragover'); });
+zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
+zone.addEventListener('drop', e => {
+  e.preventDefault(); zone.classList.remove('dragover');
+  const f = e.dataTransfer.files[0];
+  if (f) { handleFile(f); const dt = new DataTransfer(); dt.items.add(f); fileInp.files = dt.files; }
+});
+
+function handleFile(f) {
+  if (!f) return;
+  if (f.type !== 'application/pdf' && !f.name.endsWith('.pdf')) {
+    Toast.error('Seuls les fichiers PDF sont acceptés.'); return;
+  }
+  if (f.size > 5 * 1024 * 1024) {
+    Toast.error('Le fichier dépasse 5 Mo.'); return;
+  }
+  zone.classList.add('has-file');
+  fileNm.textContent = '✓ ' + f.name + ' (' + (f.size / 1024).toFixed(0) + ' Ko)';
+}
+
+// ─── Validation ───────────────────────────────────────────────
+function validateField(id, errId, test, msg) {
+  const el  = document.getElementById(id);
+  const err = document.getElementById(errId);
+  if (!test(el.value.trim())) {
+    el.classList.add('error'); err.textContent = msg; return false;
+  }
+  el.classList.remove('error'); err.textContent = ''; return true;
+}
+
+function validateForm() {
+  let ok = true;
+  ok = validateField('nom_complet', 'err-nom',     v => v.length >= 3,  'Nom requis (min. 3 caractères)') && ok;
+  ok = validateField('email',       'err-email',   v => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v), 'Email invalide') && ok;
+  ok = validateField('telephone',   'err-tel',     v => v.length >= 8,  'Téléphone requis') && ok;
+  ok = validateField('ecole',       'err-ecole',   v => v.length >= 2,  'École requise') && ok;
+  ok = validateField('filiere',     'err-filiere', v => v.length >= 2,  'Filière requise') && ok;
+  ok = validateField('niveau',      'err-niveau',  v => !!v,            'Niveau requis') && ok;
+  ok = validateField('date_souhaitee', 'err-date', v => !!v && new Date(v) > new Date(), 'Date dans le futur requise') && ok;
+  ok = validateField('duree',       'err-duree',   v => !!v,            'Durée requise') && ok;
+  return ok;
+}
+
+// ─── Soumission ───────────────────────────────────────────────
+document.getElementById('demande-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  if (!validateForm()) { Toast.warning('Veuillez corriger les erreurs du formulaire.'); return; }
+
+  const btn  = document.getElementById('submit-btn');
+  const pb   = document.getElementById('progress-bar');
+  const fill = document.getElementById('progress-fill');
+
+  btn.disabled = true;
+  btn.innerHTML = '<span>Envoi en cours…</span>';
+  pb.style.display = 'block';
+
+  // Simuler progression
+  let p = 0;
+  const interval = setInterval(() => { p = Math.min(p + 15, 85); fill.style.width = p + '%'; }, 200);
+
+  try {
+    const fd = new FormData(e.target);
+    const r  = await API.postForm('submit.php', fd);
+
+    clearInterval(interval);
+    fill.style.width = '100%';
+
+    setTimeout(() => {
+      pb.style.display = 'none';
+      if (r.success) {
+        document.getElementById('form-card').style.display    = 'none';
+        document.getElementById('success-screen').style.display = 'block';
+      } else {
+        Toast.error(r.message || 'Erreur lors de la soumission.');
+        btn.disabled = false;
+        btn.innerHTML = '<span>Soumettre ma candidature</span>';
+      }
+    }, 400);
+
+  } catch (err) {
+    clearInterval(interval);
+    var msg = 'Erreur de connexion au serveur.';
+    if (err.message === 'network') {
+      msg = 'Serveur inaccessible — vérifiez qu\'Apache est démarré dans XAMPP.';
+    } else if (err.message === 'parse') {
+      msg = 'Réponse PHP invalide — ouvrez F12 > Console pour le détail.';
+    }
+    Toast.error(msg);
+    btn.disabled = false;
+    btn.innerHTML = '<span>Soumettre ma candidature</span>';
+    pb.style.display = 'none';
+  }
+});
+
+function resetForm() {
+  document.getElementById('demande-form').reset();
+  zone.classList.remove('has-file');
+  fileNm.textContent = '';
+  document.getElementById('form-card').style.display    = 'block';
+  document.getElementById('success-screen').style.display = 'none';
+}
+
+// Validation en temps réel
+['nom_complet','email','telephone','ecole','filiere'].forEach(id => {
+  document.getElementById(id)?.addEventListener('blur', () => {
+    document.getElementById(id).classList.remove('error');
+    document.getElementById('err-' + (id === 'telephone' ? 'tel' : id === 'nom_complet' ? 'nom' : id)).textContent = '';
+  });
+});
+</script>
+</body>
+</html>

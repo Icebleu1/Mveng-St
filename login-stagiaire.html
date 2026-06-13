@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Espace Stagiaire — MVENGINEERING</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    body { background:linear-gradient(135deg,#065f46 0%,#059669 60%,#34d399 100%); min-height:100vh; display:flex; align-items:center; justify-content:center; padding:20px; }
+    .login-wrapper { width:100%; max-width:420px; }
+    .login-header  { text-align:center; margin-bottom:28px; color:#fff; }
+    .login-logo    { font-size:52px; margin-bottom:10px; }
+    .login-title   { font-size:24px; font-weight:800; margin-bottom:4px; }
+    .login-sub     { font-size:14px; opacity:.8; }
+    .login-card    { background:#fff; border-radius:16px; padding:34px; box-shadow:0 20px 60px rgba(0,0,0,.2); }
+    .login-card h2 { font-size:19px; font-weight:700; color:var(--gris-900); margin-bottom:22px; text-align:center; }
+    .info-box      { background:#ecfdf5; border:1.5px solid #6ee7b7; border-radius:var(--radius-sm); padding:12px 16px; margin-bottom:18px; font-size:13px; color:#065f46; }
+    .input-icon-wrap { position:relative; }
+    .input-icon-wrap .icon { position:absolute; left:14px; top:50%; transform:translateY(-50%); font-size:17px; pointer-events:none; }
+    .input-icon-wrap .form-control { padding-left:42px; }
+    .toggle-pass   { position:absolute; right:12px; top:50%; transform:translateY(-50%); background:none; border:none; cursor:pointer; font-size:16px; color:var(--gris-500); }
+    .login-btn     { width:100%; padding:12px; font-size:15px; font-weight:700; border-radius:var(--radius-sm); background:#059669; color:#fff; border:none; cursor:pointer; transition:all .25s; margin-top:8px; }
+    .login-btn:hover:not(:disabled) { background:#047857; transform:translateY(-1px); }
+    .login-btn:disabled { opacity:.65; cursor:not-allowed; }
+    .spinner-inline { width:18px; height:18px; border:2px solid rgba(255,255,255,.4); border-top-color:#fff; border-radius:50%; animation:spin .7s linear infinite; display:inline-block; vertical-align:middle; margin-right:8px; }
+    .login-footer  { text-align:center; margin-top:22px; font-size:13px; color:#fff; opacity:.8; }
+    .login-footer a { color:#fff; text-decoration:underline; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+  </style>
+</head>
+<body>
+<div id="toast-container"></div>
+
+<div class="login-wrapper">
+  <div class="login-header">
+    <div class="login-logo">&#129333;</div>
+    <h1 class="login-title">MVENGINEERING</h1>
+    <p class="login-sub">Espace Stagiaire</p>
+  </div>
+
+  <div class="login-card">
+    <h2>&#128275; Connexion stagiaire</h2>
+
+    <div class="info-box">
+      &#8505;&#65039; Votre compte a &#233;t&#233; cr&#233;&#233; par l&#39;administration apr&#232;s acceptation de votre demande de stage.<br>
+      Mot de passe initial : <strong>Stage<span id="annee-encours">2025</span>!</strong>
+    </div>
+
+    <form id="form-login-stag" novalidate>
+      <div class="form-group">
+        <label class="form-label" for="email">Adresse email</label>
+        <div class="input-icon-wrap">
+          <span class="icon">&#9993;&#65039;</span>
+          <input type="email" class="form-control" id="email" placeholder="votre@email.com" autocomplete="email" required>
+        </div>
+        <div class="form-error" id="err-email"></div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="mot_de_passe">Mot de passe</label>
+        <div class="input-icon-wrap">
+          <span class="icon">&#128274;</span>
+          <input type="password" class="form-control" id="mot_de_passe" placeholder="&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;" autocomplete="current-password" required>
+          <button type="button" class="toggle-pass" id="toggle-pass">&#128065;&#65039;</button>
+        </div>
+        <div class="form-error" id="err-mdp"></div>
+      </div>
+
+      <button type="submit" class="login-btn" id="login-btn">Se connecter</button>
+    </form>
+  </div>
+
+  <div class="login-footer">
+    <a href="index.html">&#8592; Retour &#224; l&#39;accueil</a>
+    &nbsp;&middot;&nbsp;
+    <a href="demande.html">Faire une demande de stage</a>
+    &nbsp;&middot;&nbsp;
+    <a href="login.html">Connexion admin</a>
+  </div>
+</div>
+
+<script src="js/app.js"></script>
+<script>
+'use strict';
+document.getElementById('annee-encours').textContent = new Date().getFullYear();
+
+/* Déjà connecté ? */
+(function() {
+  fetch(API_BASE + 'auth.php', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({action:'check'})
+  }).then(function(r){return r.json();}).then(function(d){
+    if (d && d.success && d.user && d.user.role === 'stagiaire') {
+      window.location.href = 'espace-stagiaire.html';
+    }
+  }).catch(function(){});
+})();
+
+/* Afficher/masquer mot de passe */
+document.getElementById('toggle-pass').addEventListener('click', function() {
+  var inp = document.getElementById('mot_de_passe');
+  if (inp.type === 'password') { inp.type = 'text'; this.innerHTML = '&#128584;'; }
+  else { inp.type = 'password'; this.innerHTML = '&#128065;&#65039;'; }
+});
+
+/* Soumission */
+document.getElementById('form-login-stag').addEventListener('submit', function(e) {
+  e.preventDefault();
+  var email = document.getElementById('email').value.trim();
+  var mdp   = document.getElementById('mot_de_passe').value;
+  var btn   = document.getElementById('login-btn');
+  var ok    = true;
+
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    document.getElementById('email').classList.add('error');
+    document.getElementById('err-email').textContent = 'Email invalide.';
+    ok = false;
+  } else {
+    document.getElementById('email').classList.remove('error');
+    document.getElementById('err-email').textContent = '';
+  }
+  if (!mdp || mdp.length < 4) {
+    document.getElementById('mot_de_passe').classList.add('error');
+    document.getElementById('err-mdp').textContent = 'Mot de passe requis.';
+    ok = false;
+  } else {
+    document.getElementById('mot_de_passe').classList.remove('error');
+    document.getElementById('err-mdp').textContent = '';
+  }
+  if (!ok) { return; }
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-inline"></span>Connexion&#8230;';
+
+  fetch(API_BASE + 'auth.php', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({action:'login_stagiaire', email:email, mot_de_passe:mdp})
+  })
+  .then(function(res) { return res.text().then(function(t) { return JSON.parse(t); }); })
+  .then(function(data) {
+    if (data.success) {
+      Toast.success('Connexion r&#233;ussie !');
+      setTimeout(function() { window.location.href = 'espace-stagiaire.html'; }, 700);
+    } else {
+      Toast.error(data.message || 'Identifiants incorrects.');
+      document.getElementById('mot_de_passe').value = '';
+      btn.disabled = false; btn.textContent = 'Se connecter';
+    }
+  })
+  .catch(function(err) {
+    Toast.error(err instanceof TypeError ? 'Serveur inaccessible \u2014 v\u00e9rifiez Apache.' : 'Erreur : ' + err.message);
+    btn.disabled = false; btn.textContent = 'Se connecter';
+  });
+});
+
+var ids = ['email','mot_de_passe'];
+for (var i = 0; i < ids.length; i++) {
+  (function(id) {
+    var el = document.getElementById(id);
+    if (el) { el.addEventListener('focus', function() { el.classList.remove('error'); }); }
+  })(ids[i]);
+}
+</script>
+</body>
+</html>

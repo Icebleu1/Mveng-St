@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MVENG ENGINEERING — Accueil</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/home.css">
+</head>
+<body>
+
+<!-- ─── Bouton hamburger ──────────────────────────────────── -->
+<button class="hamburger-btn" id="hamburger-btn" aria-label="Menu">
+  <span></span><span></span><span></span>
+</button>
+
+<!-- ─── Sidebar navigation ────────────────────────────────── -->
+<aside class="sidebar" id="sidebar" role="navigation">
+  <div class="sidebar-header">
+    <div class="sidebar-logo"><div class="icon">🎓</div>MVENG ENGINEERING</div>
+    <div class="sidebar-sub">Gestion des stagiaires</div>
+  </div>
+  <nav>
+    <a href="index.html" class="active"><span class="nav-icon">&#127968;</span>Accueil</a>
+    <a href="demande.html"><span class="nav-icon">&#128221;</span>Demande de stage</a>
+    <a href="reception.html"><span class="nav-icon">&#128203;</span>R&#233;ception</a>
+    <a href="admin.html"><span class="nav-icon">&#128202;</span>Administration</a>
+    <a href="login.html"><span class="nav-icon">&#128272;</span>Connexion Admin</a>
+    <a href="login-stagiaire.html"><span class="nav-icon">&#129333;</span>Espace Stagiaire</a>
+    <a href="#" onclick="logout()"><span class="nav-icon">&#128682;</span>D&#233;connexion</a>
+  </nav>
+  <div class="sidebar-footer">© 2025 MVENG ENGINEERING</div>
+</aside>
+<div class="sidebar-overlay" id="sidebar-overlay"></div>
+<div id="toast-container"></div>
+
+<!-- ─── Bannière principale ────────────────────────────────── -->
+<header class="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-content">
+    <div class="hero-logo">🎓</div>
+    <h1 class="hero-title">MVENG ENGINEERING</h1>
+    <p class="hero-slogan">Pour vous, Vers vous, à Moindre coût !</p>
+    <div class="hero-actions">
+      <a href="demande.html" class="btn btn-hero-primary">📝 Faire une demande de stage</a>
+      <a href="#a-propos" class="btn btn-hero-outline">En savoir plus</a>
+    </div>
+  </div>
+  <div class="hero-wave">
+    <svg viewBox="0 0 1440 80" preserveAspectRatio="none"><path d="M0,40 C360,80 1080,0 1440,40 L1440,80 L0,80 Z" fill="#f3f4f6"/></svg>
+  </div>
+</header>
+
+<!-- ─── Statistiques ────────────────────────────────────────── -->
+<section class="section-stats">
+  <div class="stats-container">
+    <div class="stat-bubble">
+      <div class="stat-number" data-target="108">0</div>
+      <div class="stat-lbl">Stagiaires formés</div>
+    </div>
+    <div class="stat-bubble">
+      <div class="stat-number" data-target="9">0</div>
+      <div class="stat-lbl">Années d'expérience</div>
+    </div>
+    <div class="stat-bubble">
+      <div class="stat-number" data-target="95">0</div>
+      <div class="stat-lbl">% de satisfaction</div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ─── À propos ────────────────────────────────────────────── -->
+<section class="section" id="a-propos">
+  <div class="section-inner">
+    <div class="section-header">
+      <span class="section-tag">Qui sommes-nous</span>
+      <h2>Présentation de l'entreprise</h2>
+    </div>
+    <div class="about-grid">
+      <div class="about-text">
+        <p>Fondée en 2019 à Yaoundé, <strong>MVENG ENGINEERING</strong> est une entreprise spécialisée dans le développement logiciel, la cybersécurité et la transformation numérique des organisations </p>
+        <p>Avec une équipe d'experts passionnés, nous accompagnons les entreprises, administrations et ONG dans leur transition vers le numérique.</p>
+        <h3>Notre historique</h3>
+        <div class="timeline">
+          <div class="timeline-item"><div class="tl-year">2019</div><div class="tl-text">Création à Yaoundé</div></div>
+          <div class="timeline-item"><div class="tl-year">2022</div><div class="tl-text">Lancement du programme de stages</div></div>
+          <div class="timeline-item"><div class="tl-year">2025</div><div class="tl-text">Plus de 108 stagiaires accompagnés</div></div>
+        </div>
+      </div>
+      <div class="about-img">
+        <div class="img-placeholder">🏢<br><small>MVENG ENGINEERING <br>Yaoundé</small></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── Services ────────────────────────────────────────────── -->
+<section class="section section-alt" id="services">
+  <div class="section-inner">
+    <div class="section-header">
+      <span class="section-tag">Ce que nous faisons</span>
+      <h2>Nos services</h2>
+    </div>
+    <div class="services-grid">
+      <div class="service-card"><div class="service-icon">💻</div><h3>Développement logiciel</h3><p>Applications web, mobile et desktop sur mesure pour vos besoins métier.</p></div>
+      <div class="service-card"><div class="service-icon">🔒</div><h3>Cybersécurité</h3><p>Audit, protection et formation à la sécurité des systèmes d'information.</p></div>
+      <div class="service-card"><div class="service-icon">☁️</div><h3>Cloud & Infrastructure</h3><p>Migration cloud, virtualisation et gestion d'infrastructure moderne.</p></div>
+      <div class="service-card"><div class="service-icon">📊</div><h3>Data & IA</h3><p>Analyse de données, tableaux de bord et solutions d'intelligence artificielle.</p></div>
+      <div class="service-card"><div class="service-icon">🎓</div><h3>Formation</h3><p>Formations certifiantes en développement, réseaux et gestion de projets IT.</p></div>
+      <div class="service-card"><div class="service-icon">🤝</div><h3>Conseil IT</h3><p>Accompagnement stratégique dans la transformation numérique.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── Valeurs ─────────────────────────────────────────────── -->
+<section class="section" id="valeurs">
+  <div class="section-inner">
+    <div class="section-header">
+      <span class="section-tag">Ce qui nous guide</span>
+      <h2>Nos valeurs</h2>
+    </div>
+    <div class="valeurs-grid">
+      <div class="valeur-item"><span class="valeur-icon">🚀</span><h4>Innovation</h4><p>Nous adoptons les technologies de pointe pour créer des solutions d'avenir.</p></div>
+      <div class="valeur-item"><span class="valeur-icon">🌟</span><h4>Excellence</h4><p>Chaque livrable respecte les plus hauts standards de qualité.</p></div>
+      <div class="valeur-item"><span class="valeur-icon">🤝</span><h4>Collaboration</h4><p>Le travail d'équipe et le partage de connaissances sont au cœur de notre culture.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── Pourquoi nous rejoindre ────────────────────────────── -->
+<section class="section section-alt" id="rejoindre">
+  <div class="section-inner">
+    <div class="section-header">
+      <span class="section-tag">Stage chez MVENG ENGINEERING</span>
+      <h2>Pourquoi nous rejoindre ?</h2>
+    </div>
+    <div class="reasons-grid">
+      <div class="reason"><span>🎯</span><div><h4>Projets réels</h4><p>Vous travaillez sur des projets clients concrets dès votre première semaine.</p></div></div>
+      <div class="reason"><span>👨‍💼</span><div><h4>Encadrement dédié</h4><p>Un mentor vous accompagne tout au long de votre stage.</p></div></div>
+      <div class="reason"><span>🌐</span><div><h4>Réseau</h4><p>Intégrez un réseau de plus de 500 alumni actifs en Afrique.</p></div></div>
+    </div>
+    <div style="text-align:center;margin-top:32px">
+      <a href="demande.html" class="btn btn-primary" style="font-size:16px;padding:14px 32px">📝 Déposer ma candidature</a>
+    </div>
+  </div>
+</section>
+
+<!-- ─── Témoignages ─────────────────────────────────────────── -->
+<section class="section" id="temoignages">
+  <div class="section-inner">
+    <div class="section-header">
+      <span class="section-tag">Ils témoignent</span>
+      <h2>Nos anciens stagiaires</h2>
+    </div>
+    <div class="temoignages-grid">
+      <div class="temoignage">
+        <div class="temo-stars">★★★★★</div>
+        <p>"Mon stage chez MVENG ENGINEERING a été une expérience transformatrice. J'ai appris le développement React en conditions réelles et j'ai été embauché à la fin."</p>
+        <div class="temo-author"><div class="temo-avatar">JM</div><div><strong>Jean-Marie Ekanga</strong><span>Dev Frontend — Promo 2024</span></div></div>
+      </div>
+      <div class="temoignage">
+        <div class="temo-stars">★★★★★</div>
+        <p>"L'encadrement est exceptionnel. Mon maître de stage était toujours disponible et les projets confiés avaient une vraie valeur ajoutée."</p>
+        <div class="temo-author"><div class="temo-avatar">AF</div><div><strong>Aminata Fofana</strong><span>Data Analyst — Promo 2024</span></div></div>
+      </div>
+      <div class="temoignage">
+        <div class="temo-stars">★★★★☆</div>
+        <p>"Ambiance professionnelle mais conviviale. J'ai pu mettre en pratique tout ce que j'avais appris en Master de cybersécurité."</p>
+        <div class="temo-author"><div class="temo-avatar">CP</div><div><strong>Christian Penda</strong><span>Cybersécurité — Promo 2023</span></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── Contact ─────────────────────────────────────────────── -->
+<section class="section section-alt" id="contact">
+  <div class="section-inner">
+    <div class="section-header">
+      <span class="section-tag">Nous joindre</span>
+      <h2>Coordonnées</h2>
+    </div>
+    <div class="contact-grid">
+      <div class="contact-item"><span class="contact-icon">📍</span><div><strong>Adresse</strong><p>Avenue Kennedy, Yaoundé, Cameroun</p></div></div>
+      <div class="contact-item"><span class="contact-icon">📞</span><div><strong>Téléphone</strong><p>+237 654 717 211 </p></div></div>
+      <div class="contact-item"><span class="contact-icon">✉️</span><div><strong>Email</strong><p><a href="mailto:info@mvengi.com">info@mvengi.com</a></p></div></div>
+      <div class="contact-item"><span class="contact-icon">🕐</span><div><strong>Horaires</strong><p>Lun–Ven : 8h–17h</p></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── Tableau de suivi public ────────────────────────────── -->
+<section class="section" id="suivi">
+  <div class="section-inner">
+    <div class="section-header">
+      <span class="section-tag">Transparence</span>
+      <h2>Suivi des demandes</h2>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Toutes les demandes</span>
+        <div class="search-bar" style="width:240px">
+          <span class="icon">🔍</span>
+          <input type="text" id="search-public" placeholder="Rechercher…">
+        </div>
+      </div>
+      <div id="stats-mini" class="stats-grid" style="margin-bottom:20px">
+        <div class="stat-card bleu"><div class="stat-icon">📋</div><div><div class="stat-value" id="cnt-total">—</div><div class="stat-label">Total demandes</div></div></div>
+        <div class="stat-card orange"><div class="stat-icon">⏳</div><div><div class="stat-value" id="cnt-attente">—</div><div class="stat-label">En attente</div></div></div>
+        <div class="stat-card vert"><div class="stat-icon">✅</div><div><div class="stat-value" id="cnt-accepte">—</div><div class="stat-label">Acceptées</div></div></div>
+        <div class="stat-card rouge"><div class="stat-icon">❌</div><div><div class="stat-value" id="cnt-refuse">—</div><div class="stat-label">Refusées</div></div></div>
+      </div>
+      <div class="chart-row" style="display:flex;gap:20px;flex-wrap:wrap;margin-bottom:20px">
+        <div style="flex:0 0 200px"><canvas id="chart-statuts" width="200" height="200"></canvas></div>
+        <div style="flex:1;min-width:200px"><canvas id="chart-evolution" height="180"></canvas></div>
+      </div>
+      <div class="table-wrapper">
+        <table id="public-table">
+          <thead>
+            <tr>
+              <th data-sort="nom">Nom</th>
+              <th data-sort="ecole">École</th>
+              <th data-sort="filiere">Filière</th>
+              <th data-sort="date">Date souhaitée</th>
+              <th data-sort="statut">Statut</th>
+            </tr>
+          </thead>
+          <tbody id="public-tbody">
+            <tr><td colspan="5" style="text-align:center;padding:40px"><div class="spinner"></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="pagination" id="public-pagination"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── Footer ─────────────────────────────────────────────── -->
+<footer>
+  <p>© 2025 MVENG ENGINEERING · Yaoundé, Cameroun · <a href="mailto:contact@MVENG ENGINEERING.cm">contact@MVENG ENGINEERING.cm</a></p>
+</footer>
+
+<!-- ─── Modal de confirmation ─────────────────────────────── -->
+<div class="modal-overlay" id="confirm-modal">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-header"><span class="modal-title" id="confirm-title">Confirmation</span></div>
+    <div class="modal-body"><p id="confirm-message"></p></div>
+    <div class="modal-footer">
+      <button class="btn btn-outline btn-sm" id="confirm-no">Annuler</button>
+      <button class="btn btn-primary btn-sm" id="confirm-yes">Confirmer</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="js/app.js"></script>
+<script src="js/home.js"></script>
+</body>
+</html>

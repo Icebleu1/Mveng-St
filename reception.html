@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Réception des demandes — MVENGINEERING</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .filters-bar { display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-bottom:20px; }
+    .filter-btn  { padding:7px 16px; border-radius:20px; border:1.5px solid var(--gris-300); background:var(--blanc); font-size:13px; font-weight:600; cursor:pointer; transition:all .2s; color:var(--gris-700); }
+    .filter-btn:hover, .filter-btn.active { background:var(--bleu); border-color:var(--bleu); color:#fff; }
+    .filter-btn.vert.active   { background:var(--vert);   border-color:var(--vert); }
+    .filter-btn.rouge.active  { background:var(--rouge);  border-color:var(--rouge); }
+    .filter-btn.orange.active { background:var(--orange); border-color:var(--orange); }
+    .cv-link { display:inline-flex; align-items:center; gap:4px; color:var(--bleu); font-size:13px; font-weight:600; }
+    .cv-link:hover { text-decoration:underline; }
+    .actions-cell { display:flex; gap:6px; flex-wrap:wrap; }
+    .empty-state { text-align:center; padding:60px 20px; color:var(--gris-500); }
+    .empty-state .icon { font-size:56px; margin-bottom:12px; }
+    .detail-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px 24px; }
+    .detail-item label { font-size:12px; color:var(--gris-500); font-weight:600; text-transform:uppercase; display:block; margin-bottom:2px; }
+    .detail-item span  { font-size:14px; color:var(--gris-900); }
+    @media print {
+      .hamburger-btn, .sidebar, .sidebar-overlay, .filters-bar, .actions-cell, .pagination, #toast-container { display:none !important; }
+      .main-content { padding:0; }
+    }
+  </style>
+</head>
+<body>
+
+<button class="hamburger-btn" id="hamburger-btn" aria-label="Menu"><span></span><span></span><span></span></button>
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-header"><div class="sidebar-logo"><div class="icon">🎓</div>MVENGINEERING</div><div class="sidebar-sub">Gestion des stagiaires</div></div>
+  <nav>
+    <a href="index.html"><span class="nav-icon">&#127968;</span>Accueil</a>
+    <a href="demande.html"><span class="nav-icon">&#128221;</span>Demande de stage</a>
+    <a href="reception.html" class="active"><span class="nav-icon">&#128203;</span>R&#233;ception</a>
+    <a href="admin.html"><span class="nav-icon">&#128202;</span>Administration</a>
+    <a href="login.html"><span class="nav-icon">&#128272;</span>Connexion Admin</a>
+    <a href="login-stagiaire.html"><span class="nav-icon">&#129333;</span>Espace Stagiaire</a>
+    <a href="#" onclick="logout()"><span class="nav-icon">&#128682;</span>D&#233;connexion</a>
+  </nav>
+  <div class="sidebar-footer">© 2025 MVENGINEERING</div>
+</aside>
+<div class="sidebar-overlay" id="sidebar-overlay"></div>
+<div id="toast-container"></div>
+
+<div class="topbar">
+  <span class="topbar-title">📋 Réception des demandes</span>
+  <div class="topbar-actions">
+    <button class="btn btn-outline btn-sm" onclick="exportTableCSV('demandes-table','demandes.csv')">⬇️ CSV</button>
+    <button class="btn btn-outline btn-sm" onclick="exportPDF()">🖨️ Imprimer</button>
+    <button class="btn btn-primary btn-sm" onclick="loadDemandes()">🔄 Actualiser</button>
+  </div>
+</div>
+
+<div class="main-content">
+
+  <!-- Statistiques rapides -->
+  <div class="stats-grid" id="stats-reception" style="margin-bottom:24px">
+    <div class="stat-card bleu"><div class="stat-icon">📋</div><div><div class="stat-value" id="s-total">—</div><div class="stat-label">Total</div></div></div>
+    <div class="stat-card orange"><div class="stat-icon">⏳</div><div><div class="stat-value" id="s-attente">—</div><div class="stat-label">En attente</div></div></div>
+    <div class="stat-card vert"><div class="stat-icon">✅</div><div><div class="stat-value" id="s-accepte">—</div><div class="stat-label">Acceptées</div></div></div>
+    <div class="stat-card rouge"><div class="stat-icon">❌</div><div><div class="stat-value" id="s-refuse">—</div><div class="stat-label">Refusées</div></div></div>
+  </div>
+
+  <div class="card">
+    <!-- Filtres & recherche -->
+    <div class="card-header" style="flex-wrap:wrap;gap:12px">
+      <div class="filters-bar" style="margin:0">
+        <button class="filter-btn active" data-statut="" onclick="setFilter(this,'')">Toutes</button>
+        <button class="filter-btn orange" data-statut="en_attente" onclick="setFilter(this,'en_attente')">⏳ En attente</button>
+        <button class="filter-btn vert"   data-statut="accepte"    onclick="setFilter(this,'accepte')">✅ Acceptées</button>
+        <button class="filter-btn rouge"  data-statut="refuse"     onclick="setFilter(this,'refuse')">❌ Refusées</button>
+      </div>
+      <div class="search-bar" style="width:240px">
+        <span class="icon">🔍</span>
+        <input type="text" id="search-input" placeholder="Rechercher…">
+      </div>
+    </div>
+
+    <div class="table-wrapper">
+      <table id="demandes-table">
+        <thead>
+          <tr>
+            <th data-sort="nom">Nom complet</th>
+            <th data-sort="email">Email</th>
+            <th data-sort="ecole">École</th>
+            <th data-sort="filiere">Filière</th>
+            <th data-sort="date">Date souhaitée</th>
+            <th data-sort="statut">Statut</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="demandes-tbody">
+          <tr><td colspan="7" style="text-align:center;padding:60px"><div class="spinner"></div></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-top:16px">
+      <span id="result-count" style="font-size:13px;color:var(--gris-500)"></span>
+      <div class="pagination" id="pagination"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── Modal détail candidat ─────────────────────────────── -->
+<div class="modal-overlay" id="modal-detail">
+  <div class="modal" style="max-width:580px">
+    <div class="modal-header">
+      <span class="modal-title">👤 Détail de la candidature</span>
+      <button class="btn-icon" onclick="closeModal('modal-detail')">✕</button>
+    </div>
+    <div class="modal-body" id="modal-detail-body"></div>
+    <div class="modal-footer">
+      <button class="btn btn-outline btn-sm" onclick="closeModal('modal-detail')">Fermer</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── Modal refus avec motif ────────────────────────────── -->
+<div class="modal-overlay" id="modal-refus">
+  <div class="modal" style="max-width:440px">
+    <div class="modal-header">
+      <span class="modal-title">❌ Refuser la demande</span>
+      <button class="btn-icon" onclick="closeModal('modal-refus')">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="margin-bottom:16px;color:var(--gris-500)">Un email de refus sera automatiquement envoyé au candidat.</p>
+      <div class="form-group">
+        <label class="form-label">Motif du refus (optionnel)</label>
+        <textarea class="form-control" id="motif-refus" rows="3" placeholder="Ex : Aucun poste disponible dans votre filière pour la période souhaitée…"></textarea>
+      </div>
+      <p id="refus-candidat-nom" style="font-weight:600;color:var(--gris-900)"></p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline btn-sm" onclick="closeModal('modal-refus')">Annuler</button>
+      <button class="btn btn-danger btn-sm" id="confirm-refus-btn">Confirmer le refus</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── Modal confirmation suppression ────────────────────── -->
+<div class="modal-overlay" id="confirm-modal">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-header"><span class="modal-title" id="confirm-title">Confirmation</span></div>
+    <div class="modal-body"><p id="confirm-message"></p></div>
+    <div class="modal-footer">
+      <button class="btn btn-outline btn-sm" id="confirm-no">Annuler</button>
+      <button class="btn btn-danger btn-sm" id="confirm-yes">Supprimer</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/app.js"></script>
+<script>
+'use strict';
+
+let currentPage   = 1;
+let currentStatut = '';
+let searchTimer;
+
+// ─── Chargement des demandes ──────────────────────────────────
+async function loadDemandes() {
+  showLoading();
+  try {
+    const r = await API.post('action.php', {
+      action: 'get_demandes',
+      page: currentPage,
+      statut: currentStatut,
+      search: document.getElementById('search-input').value.trim()
+    });
+    if (!r.success) { Toast.error(r.message); return; }
+    renderTable(r.demandes);
+    renderPagination(r.pages, r.page, r.total);
+    updateStats();
+  } catch (err) {
+    console.error('[réception] Erreur chargement:', err);
+    renderDemoTable();
+    if (err.message === 'network') {
+      Toast.error('Serveur PHP inaccessible — vérifiez que Apache est actif dans XAMPP.');
+    } else if (err.message === 'parse') {
+      Toast.error('Erreur PHP : réponse invalide (ouvrez F12 > Console pour voir le détail).');
+    } else {
+      Toast.warning('Mode démo — ' + (err.message || 'erreur inconnue'));
+    }
+  }
+}
+
+function showLoading() {
+  document.getElementById('demandes-tbody').innerHTML =
+    '<tr><td colspan="7" style="text-align:center;padding:60px"><div class="spinner"></div></td></tr>';
+}
+
+function renderTable(demandes) {
+  const tbody = document.getElementById('demandes-tbody');
+  if (!demandes.length) {
+    tbody.innerHTML = `<tr><td colspan="7">
+      <div class="empty-state"><div class="icon">📭</div>
+      <p>Aucune demande trouvée</p></div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = demandes.map(d => `
+    <tr>
+      <td><strong>${esc(d.nom_complet)}</strong><br><small style="color:var(--gris-500)">${esc(d.niveau)}</small></td>
+      <td><a href="mailto:${esc(d.email)}">${esc(d.email)}</a></td>
+      <td>${esc(d.ecole)}</td>
+      <td>${esc(d.filiere)}</td>
+      <td>${formatDate(d.date_souhaitee)}<br><small style="color:var(--gris-500)">${esc(d.duree)}</small></td>
+      <td>${badgeStatut(d.statut)}</td>
+      <td>
+        <div class="actions-cell">
+          <button class="btn btn-outline btn-sm" title="Voir détails" onclick="voirDetail(${JSON.stringify(d).replace(/"/g,'&quot;')})">👁️</button>
+          ${d.cv_fichier ? `<a class="btn btn-outline btn-sm" href="uploads/${esc(d.cv_fichier)}" target="_blank" title="Voir CV">📄 CV</a>` : ''}
+          ${d.statut === 'en_attente' ? `
+            <button class="btn btn-success btn-sm" onclick="accepter(${d.id},'${esc(d.nom_complet)}')">✅</button>
+            <button class="btn btn-danger btn-sm"  onclick="ouvrirRefus(${d.id},'${esc(d.nom_complet)}')">❌</button>
+          ` : ''}
+          <button class="btn btn-outline btn-sm" style="color:var(--rouge)" title="Supprimer" onclick="supprimer(${d.id},'${esc(d.nom_complet)}')">🗑️</button>
+        </div>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function renderPagination(pages, page, total) {
+  document.getElementById('result-count').textContent = `${total} demande(s) trouvée(s)`;
+  const el = document.getElementById('pagination');
+  if (pages <= 1) { el.innerHTML = ''; return; }
+  let h = `<button onclick="goPage(${page-1})" ${page===1?'disabled':''}>‹</button>`;
+  for (let i = 1; i <= pages; i++) h += `<button class="${i===page?'active':''}" onclick="goPage(${i})">${i}</button>`;
+  h += `<button onclick="goPage(${page+1})" ${page===pages?'disabled':''}>›</button>`;
+  el.innerHTML = h;
+}
+
+function goPage(p) { currentPage = p; loadDemandes(); }
+
+function setFilter(btn, statut) {
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  currentStatut = statut; currentPage = 1;
+  loadDemandes();
+}
+
+// ─── Statistiques mini ────────────────────────────────────────
+async function updateStats() {
+  try {
+    const r = await API.post('action.php', { action: 'get_stats' });
+    if (!r.success) return;
+    const s = r.stats;
+    document.getElementById('s-total').textContent   = s.total;
+    document.getElementById('s-attente').textContent = s.en_attente;
+    document.getElementById('s-accepte').textContent = s.acceptees;
+    document.getElementById('s-refuse').textContent  = s.refusees;
+  } catch(err) { console.error('[réception] Stats:', err); }
+}
+
+// ─── Actions ──────────────────────────────────────────────────
+async function accepter(id, nom) {
+  const ok = await confirmDialog(`Accepter la demande de ${nom} ? Un email de confirmation lui sera envoyé.`, 'Accepter la candidature');
+  if (!ok) return;
+  try {
+    const r = await API.post('action.php', { action: 'accepter', id });
+    r.success ? (Toast.success(r.message), loadDemandes()) : Toast.error(r.message);
+  } catch (err) {
+    if (err.message !== 'redirect') Toast.error('Erreur réseau — vérifiez Apache dans XAMPP.');
+  }
+}
+
+let refusId = null;
+function ouvrirRefus(id, nom) {
+  refusId = id;
+  document.getElementById('refus-candidat-nom').textContent = `Candidat : ${nom}`;
+  document.getElementById('motif-refus').value = '';
+  document.getElementById('modal-refus').classList.add('open');
+}
+document.getElementById('confirm-refus-btn').addEventListener('click', async () => {
+  if (!refusId) return;
+  const motif = document.getElementById('motif-refus').value.trim();
+  closeModal('modal-refus');
+  try {
+    const r = await API.post('action.php', { action: 'refuser', id: refusId, motif });
+    r.success ? (Toast.success(r.message), loadDemandes()) : Toast.error(r.message);
+  } catch(err) {
+    if (err.message !== 'redirect') Toast.error('Erreur réseau — vérifiez Apache dans XAMPP.');
+  }
+  refusId = null;
+});
+
+async function supprimer(id, nom) {
+  const ok = await confirmDialog(`Supprimer définitivement la demande de ${nom} ? Cette action est irréversible.`, 'Supprimer la demande');
+  if (!ok) return;
+  try {
+    const r = await API.post('action.php', { action: 'supprimer', id });
+    r.success ? (Toast.success(r.message), loadDemandes()) : Toast.error(r.message);
+  } catch (err) {
+    if (err.message !== 'redirect') Toast.error('Erreur réseau — vérifiez Apache dans XAMPP.');
+  }
+}
+
+// ─── Modal détail ─────────────────────────────────────────────
+function voirDetail(d) {
+  document.getElementById('modal-detail-body').innerHTML = `
+    <div class="detail-grid">
+      <div class="detail-item"><label>Nom complet</label><span>${esc(d.nom_complet)}</span></div>
+      <div class="detail-item"><label>Email</label><span><a href="mailto:${esc(d.email)}">${esc(d.email)}</a></span></div>
+      <div class="detail-item"><label>Téléphone</label><span>${esc(d.telephone)}</span></div>
+      <div class="detail-item"><label>Statut</label><span>${badgeStatut(d.statut)}</span></div>
+      <div class="detail-item"><label>École</label><span>${esc(d.ecole)}</span></div>
+      <div class="detail-item"><label>Filière</label><span>${esc(d.filiere)}</span></div>
+      <div class="detail-item"><label>Niveau</label><span>${esc(d.niveau)}</span></div>
+      <div class="detail-item"><label>Date souhaitée</label><span>${formatDate(d.date_souhaitee)}</span></div>
+      <div class="detail-item"><label>Durée</label><span>${esc(d.duree)}</span></div>
+      <div class="detail-item"><label>Soumis le</label><span>${formatDate(d.soumis_le)}</span></div>
+      ${d.message ? `<div class="detail-item" style="grid-column:1/-1"><label>Message</label><span style="white-space:pre-wrap">${esc(d.message)}</span></div>` : ''}
+      ${d.cv_fichier ? `<div class="detail-item" style="grid-column:1/-1"><label>CV</label><span><a class="cv-link" href="uploads/${esc(d.cv_fichier)}" target="_blank">📄 Télécharger le CV</a></span></div>` : ''}
+    </div>
+  `;
+  document.getElementById('modal-detail').classList.add('open');
+}
+
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+// ─── Helpers ─────────────────────────────────────────────────
+function esc(s) {
+  const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML;
+}
+
+// ─── Démo table (sans PHP) ────────────────────────────────────
+function renderDemoTable() {
+  const demo = [
+    { id:1, nom_complet:'Jean-Pierre Mballa', email:'jp.mballa@email.com', ecole:'Univ. Yaoundé I', filiere:'Informatique', niveau:'Master 1', date_souhaitee:'2025-02-01', duree:'3 mois', statut:'accepte', cv_fichier:null, message:'Très motivé pour rejoindre votre équipe.', soumis_le:'2025-01-10' },
+    { id:2, nom_complet:'Aminata Diallo', email:'aminata.d@email.com', ecole:'ISTDI Douala', filiere:'Gestion', niveau:'Licence 3', date_souhaitee:'2025-02-15', duree:'2 mois', statut:'en_attente', cv_fichier:null, message:'', soumis_le:'2025-01-12' },
+    { id:3, nom_complet:'Christian Fopa', email:'c.fopa@email.com', ecole:'ENSP Yaoundé', filiere:'Génie civil', niveau:'Master 2', date_souhaitee:'2025-03-01', duree:'6 mois', statut:'refuse', cv_fichier:null, message:'Projet de fin d\'études.', soumis_le:'2025-01-08' },
+    { id:4, nom_complet:'Marie-Claire Ngo', email:'mc.ngo@email.com', ecole:'Univ. Douala', filiere:'Finance', niveau:'Licence 2', date_souhaitee:'2025-01-20', duree:'1 mois', statut:'en_attente', cv_fichier:null, message:'', soumis_le:'2025-01-14' },
+    { id:5, nom_complet:'Samuel Tchamba', email:'s.tchamba@email.com', ecole:'IUT Ngaoundéré', filiere:'Réseaux', niveau:'DUT', date_souhaitee:'2025-02-10', duree:'4 mois', statut:'accepte', cv_fichier:null, message:'Passionné de cybersécurité.', soumis_le:'2025-01-09' },
+  ];
+  document.getElementById('s-total').textContent   = 5;
+  document.getElementById('s-attente').textContent = 2;
+  document.getElementById('s-accepte').textContent = 2;
+  document.getElementById('s-refuse').textContent  = 1;
+  document.getElementById('result-count').textContent = '5 demande(s) trouvée(s) — mode démo';
+  renderTable(demo);
+}
+
+// ─── Recherche instantanée ────────────────────────────────────
+document.getElementById('search-input').addEventListener('input', () => {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => { currentPage = 1; loadDemandes(); }, 300);
+});
+
+// ─── Init ─────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  loadDemandes();
+  initSortableTable('demandes-table');
+  setInterval(loadDemandes, 60000);
+});
+</script>
+</body>
+</html>

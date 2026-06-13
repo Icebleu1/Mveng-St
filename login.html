@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Connexion — MVENGINEERING</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    body { background:linear-gradient(135deg,#1e3a8a 0%,#1a56db 60%,#0ea5e9 100%); min-height:100vh; display:flex; align-items:center; justify-content:center; padding:20px; }
+    .login-wrapper { width:100%; max-width:420px; }
+    .login-header  { text-align:center; margin-bottom:32px; color:#fff; }
+    .login-logo    { font-size:56px; margin-bottom:12px; }
+    .login-title   { font-size:26px; font-weight:800; margin-bottom:4px; }
+    .login-sub     { font-size:14px; opacity:.75; }
+    .login-card    { background:#fff; border-radius:16px; padding:36px; box-shadow:0 20px 60px rgba(0,0,0,.25); }
+    .login-card h2 { font-size:20px; font-weight:700; color:var(--gris-900); margin-bottom:24px; text-align:center; }
+    .default-info  { background:var(--bleu-clair); border:1.5px solid #93c5fd; border-radius:var(--radius-sm); padding:14px 16px; margin-bottom:20px; font-size:13px; color:#1e3a8a; display:none; }
+    .default-info strong { display:block; font-size:13px; margin-bottom:8px; color:#1e40af; }
+    .cred-row { display:flex; align-items:center; justify-content:space-between; background:rgba(255,255,255,.6); border-radius:6px; padding:6px 10px; margin-bottom:6px; }
+    .cred-label { font-weight:600; color:#1e3a8a; min-width:80px; }
+    .cred-value { font-family:monospace; font-size:13px; color:#1e40af; word-break:break-all; }
+    .btn-prefill { width:100%; margin-top:10px; padding:8px; background:var(--bleu); color:#fff; border:none; border-radius:6px; font-size:13px; font-weight:700; cursor:pointer; }
+    .btn-prefill:hover { background:var(--bleu-fonce); }
+    .timeout-msg { background:var(--orange-clair); border-radius:var(--radius-sm); padding:12px 16px; margin-bottom:20px; font-size:13px; color:#92400e; display:none; }
+    .input-icon-wrap { position:relative; }
+    .input-icon-wrap .icon { position:absolute; left:14px; top:50%; transform:translateY(-50%); font-size:17px; pointer-events:none; }
+    .input-icon-wrap .form-control { padding-left:42px; }
+    .toggle-pass { position:absolute; right:12px; top:50%; transform:translateY(-50%); background:none; border:none; cursor:pointer; font-size:16px; color:var(--gris-500); }
+    .login-btn { width:100%; padding:13px; font-size:15px; font-weight:700; border-radius:var(--radius-sm); background:var(--bleu); color:#fff; border:none; cursor:pointer; transition:all .25s; margin-top:8px; }
+    .login-btn:hover { background:var(--bleu-fonce); transform:translateY(-1px); }
+    .login-btn:disabled { opacity:.65; cursor:not-allowed; transform:none; }
+    .spinner-inline { width:18px; height:18px; border:2px solid rgba(255,255,255,.4); border-top-color:#fff; border-radius:50%; animation:spin .7s linear infinite; display:inline-block; vertical-align:middle; margin-right:8px; }
+    .login-footer { text-align:center; margin-top:24px; font-size:13px; color:#fff; opacity:.8; }
+    .login-footer a { color:#fff; text-decoration:underline; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+  </style>
+</head>
+<body>
+
+<div id="toast-container"></div>
+
+<div class="login-wrapper">
+  <div class="login-header">
+    <div class="login-logo">&#127891;</div>
+    <h1 class="login-title">MVENGINEERING</h1>
+    <p class="login-sub">Espace Administrateur</p>
+  </div>
+
+  <div class="login-card">
+    <h2>&#128272; Connexion</h2>
+
+    <div class="timeout-msg" id="timeout-msg">
+      &#9888;&#65039; Votre session a expir&#233;. Veuillez vous reconnecter.
+    </div>
+
+    <!--
+      BOITE IDENTIFIANTS PAR DEFAUT
+      ==============================
+      Affich&#233;e dynamiquement apr&#232;s r&#233;ponse de auth.php?action=get_defaults
+      auth.php interroge la table MySQL `utilisateurs` et retourne :
+        { success: true, defaults: { email: "...", mot_de_passe: "..." } }
+      En cas d'&#233;chec (PHP indisponible), les valeurs de secours sont affich&#233;es.
+    -->
+    <div class="default-info" id="default-info">
+      <strong>&#8505;&#65039; Identifiants administrateur</strong>
+      <div class="cred-row">
+        <span class="cred-label">Email</span>
+        <span class="cred-value" id="default-email-val">chargement...</span>
+      </div>
+      <button type="button" class="btn-prefill" id="btn-prefill">
+        &#8601; Remplir les champs automatiquement
+      </button>
+    </div>
+
+    <form id="login-form" novalidate>
+      <div class="form-group">
+        <label class="form-label" for="email">Adresse email</label>
+        <div class="input-icon-wrap">
+          <span class="icon">&#9993;&#65039;</span>
+          <input type="email" class="form-control" id="email" name="email"
+                 placeholder="admin@mvengineering.cm"
+                 autocomplete="email" required>
+        </div>
+        <div class="form-error" id="err-email"></div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="mot_de_passe">Mot de passe</label>
+        <div class="input-icon-wrap">
+          <span class="icon">&#128274;</span>
+          <input type="password" class="form-control" id="mot_de_passe" name="mot_de_passe"
+                 placeholder="&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;"
+                 autocomplete="current-password" required>
+          <button type="button" class="toggle-pass" id="toggle-pass">&#128065;&#65039;</button>
+        </div>
+        <div class="form-error" id="err-mdp"></div>
+      </div>
+
+      <div style="display:flex;align-items:center;margin-bottom:20px">
+        <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;color:var(--gris-700)">
+          <input type="checkbox" id="remember" style="accent-color:var(--bleu)">
+          Se souvenir de moi
+        </label>
+      </div>
+
+      <button type="submit" class="login-btn" id="login-btn">
+        Se connecter
+      </button>
+    </form>
+  </div>
+
+  <div class="login-footer">
+    <a href="index.html">&#8592; Retour &#224; l'accueil</a>
+    &nbsp;&middot;&nbsp;
+    <a href="demande.html">Faire une demande de stage</a>
+  </div>
+</div>
+
+<script src="js/app.js"></script>
+<script>
+'use strict';
+
+/* ============================================================
+   VARIABLES GLOBALES — identifiants par d&#233;faut
+   Valeurs de secours si PHP est inaccessible
+   ============================================================ */
+var DEFAULT_EMAIL = 'admin@mvengineering.cm';
+var DEFAULT_MDP   = 'Admin1234';
+
+/* ============================================================
+   1. SESSION EXPIR&#201;E
+   ============================================================ */
+(function() {
+  if (window.location.search.indexOf('timeout=1') !== -1) {
+    document.getElementById('timeout-msg').style.display = 'block';
+  }
+})();
+
+/* ============================================================
+   2. D&#201;J&#192; CONNECT&#201; ? → rediriger vers admin.html
+   ============================================================ */
+(function() {
+  fetch(API_BASE + 'auth.php', {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify({ action: 'check' })
+  })
+  .then(function(res) { return res.json(); })
+  .then(function(data) {
+    if (data && data.success) {
+      window.location.href = 'admin.html';
+    }
+  })
+  .catch(function() { /* non connect&#233; ou serveur hors-ligne → normal */ });
+})();
+
+/* ============================================================
+   3. CHARGER LES IDENTIFIANTS DEPUIS MySQL VIA PHP
+   ─────────────────────────────────────────────────────────
+   Appel : GET php/auth.php?action=get_defaults
+   PHP   : SELECT email FROM utilisateurs WHERE actif=1 LIMIT 1
+   R&#233;ponse JSON :
+     { success: true, defaults: { email: "...", mot_de_passe: "..." } }
+   ============================================================ */
+(function() {
+  function afficher() {
+    document.getElementById('default-email-val').textContent = DEFAULT_EMAIL;
+    document.getElementById('default-mdp-val').textContent   = DEFAULT_MDP;
+    document.getElementById('default-info').style.display    = 'block';
+  }
+
+  fetch(API_BASE + 'auth.php?action=get_defaults')
+    .then(function(res) { return res.text(); })
+    .then(function(text) {
+      try {
+        var data = JSON.parse(text);
+        if (data && data.success && data.defaults) {
+          if (data.defaults.email)        DEFAULT_EMAIL = data.defaults.email;
+          if (data.defaults.mot_de_passe) DEFAULT_MDP   = data.defaults.mot_de_passe;
+        }
+      } catch (e) {
+        console.warn('[login] get_defaults non-JSON, valeurs de secours utilisees');
+      }
+      afficher();
+    })
+    .catch(function() {
+      /* PHP inaccessible → afficher les valeurs de secours */
+      afficher();
+    });
+})();
+
+/* ============================================================
+   4. BOUTON REMPLIR AUTOMATIQUEMENT
+   → Injecte DEFAULT_EMAIL et DEFAULT_MDP dans les champs
+   ============================================================ */
+document.getElementById('btn-prefill').addEventListener('click', function() {
+  document.getElementById('email').value        = DEFAULT_EMAIL;
+  document.getElementById('mot_de_passe').value = DEFAULT_MDP;
+  document.getElementById('email').classList.remove('error');
+  document.getElementById('mot_de_passe').classList.remove('error');
+  document.getElementById('err-email').textContent = '';
+  document.getElementById('err-mdp').textContent   = '';
+  Toast.info('Champs remplis — cliquez sur "Se connecter".');
+});
+
+/* ============================================================
+   5. PR&#201;-REMPLIR L'EMAIL SI "SE SOUVENIR" &#201;TAIT COCH&#201;
+   ============================================================ */
+(function() {
+  var saved = localStorage.getItem('mveng_admin_email');
+  if (saved) {
+    document.getElementById('email').value      = saved;
+    document.getElementById('remember').checked = true;
+  }
+})();
+
+/* ============================================================
+   6. AFFICHER / MASQUER LE MOT DE PASSE
+   ============================================================ */
+document.getElementById('toggle-pass').addEventListener('click', function() {
+  var input = document.getElementById('mot_de_passe');
+  if (input.type === 'password') {
+    input.type = 'text';
+    this.innerHTML = '&#128584;';
+  } else {
+    input.type = 'password';
+    this.innerHTML = '&#128065;&#65039;';
+  }
+});
+
+/* ============================================================
+   7. SOUMISSION DU FORMULAIRE
+   ─────────────────────────────────────────────────────────
+   POST JSON → php/auth.php
+   Body : { action:"login", email:"...", mot_de_passe:"..." }
+   Succ&#232;s  : redirige vers admin.html
+   &#201;chec   : affiche le message d'erreur du serveur
+   R&#233;seau  : affiche un message d'erreur pr&#233;cis
+   ============================================================ */
+document.getElementById('login-form').addEventListener('submit', function(e) {
+  e.preventDefault();
+
+  var email    = document.getElementById('email').value.trim();
+  var mdp      = document.getElementById('mot_de_passe').value;
+  var remember = document.getElementById('remember').checked;
+  var btn      = document.getElementById('login-btn');
+
+  /* ── Validation c&#244;t&#233; client ── */
+  var valide = true;
+
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    document.getElementById('email').classList.add('error');
+    document.getElementById('err-email').textContent = 'Adresse email invalide.';
+    valide = false;
+  } else {
+    document.getElementById('email').classList.remove('error');
+    document.getElementById('err-email').textContent = '';
+  }
+
+  if (!mdp || mdp.length < 4) {
+    document.getElementById('mot_de_passe').classList.add('error');
+    document.getElementById('err-mdp').textContent = 'Mot de passe requis (min. 4 caract&#232;res).';
+    valide = false;
+  } else {
+    document.getElementById('mot_de_passe').classList.remove('error');
+    document.getElementById('err-mdp').textContent = '';
+  }
+
+  if (!valide) { return; }
+
+  /* ── Afficher le spinner ── */
+  btn.disabled  = true;
+  btn.innerHTML = '<span class="spinner-inline"></span>Connexion en cours&#8230;';
+
+  /* ── Appel PHP ── */
+  fetch(API_BASE + 'auth.php', {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify({
+      action:       'login',
+      email:        email,
+      mot_de_passe: mdp
+    })
+  })
+  .then(function(res) {
+    return res.text().then(function(text) {
+      try {
+        return JSON.parse(text);
+      } catch (parseErr) {
+        console.error('[login] Reponse non-JSON :', text.substring(0, 400));
+        var err = new Error('parse');
+        throw err;
+      }
+    });
+  })
+  .then(function(data) {
+    if (data.success) {
+      /* Connexion r&#233;ussie */
+      if (remember) {
+        localStorage.setItem('mveng_admin_email', email);
+      } else {
+        localStorage.removeItem('mveng_admin_email');
+      }
+      Toast.success('Connexion r&#233;ussie ! Redirection&#8230;');
+      setTimeout(function() {
+        window.location.href = 'admin.html';
+      }, 700);
+    } else {
+      /* Mauvais identifiants */
+      Toast.error(data.message || 'Email ou mot de passe incorrect.');
+      document.getElementById('mot_de_passe').value = '';
+      document.getElementById('mot_de_passe').classList.add('error');
+      btn.disabled    = false;
+      btn.textContent = 'Se connecter';
+    }
+  })
+  .catch(function(err) {
+    var msg = 'Erreur inconnue. R&#233;essayez.';
+    if (!err.message || err.message === 'Failed to fetch' || err instanceof TypeError) {
+      msg = "Serveur inaccessible \u2014 v\u00e9rifiez qu'Apache est d\u00e9marr\u00e9 dans XAMPP.";
+    } else if (err.message === 'parse') {
+      msg = 'R\u00e9ponse PHP invalide. Ouvrez F12 \u2192 Console pour le d\u00e9tail.';
+    }
+    Toast.error(msg);
+    btn.disabled    = false;
+    btn.textContent = 'Se connecter';
+  });
+});
+
+/* ============================================================
+   8. EFFACER L'ERREUR AU FOCUS (boucle for compatible ES5)
+   ============================================================ */
+var champIds = ['email', 'mot_de_passe'];
+for (var i = 0; i < champIds.length; i++) {
+  (function(id) {
+    var el = document.getElementById(id);
+    if (el) {
+      el.addEventListener('focus', function() {
+        el.classList.remove('error');
+      });
+    }
+  })(champIds[i]);
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mon Espace Stagiaire — MVENGINEERING</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    /* ── Layout ── */
+    .stag-header { background:linear-gradient(135deg,#065f46,#059669); padding:28px 32px; border-radius:var(--radius); margin-bottom:24px; color:#fff; display:flex; align-items:center; gap:20px; }
+    .stag-avatar { width:64px; height:64px; border-radius:50%; background:rgba(255,255,255,.25); display:flex; align-items:center; justify-content:center; font-size:26px; font-weight:700; flex-shrink:0; }
+    .stag-name   { font-size:22px; font-weight:800; }
+    .stag-sub    { font-size:14px; opacity:.85; margin-top:4px; }
+    /* ── Progression ── */
+    .prog-bar    { height:12px; border-radius:6px; background:rgba(255,255,255,.3); margin-top:12px; overflow:hidden; }
+    .prog-fill   { height:100%; border-radius:6px; background:#fff; transition:width 1s ease; }
+    .prog-label  { font-size:12px; opacity:.8; margin-top:5px; }
+    /* ── Onglets ── */
+    .tabs        { display:flex; border-bottom:2px solid var(--gris-200); margin-bottom:20px; overflow-x:auto; }
+    .tab-btn     { padding:10px 16px; border:none; background:transparent; font-size:14px; font-weight:600; color:var(--gris-500); cursor:pointer; border-bottom:3px solid transparent; margin-bottom:-2px; white-space:nowrap; transition:all .2s; }
+    .tab-btn.active { color:#059669; border-bottom-color:#059669; }
+    .tab-panel   { display:none; }
+    .tab-panel.active { display:block; }
+    /* ── Infos profil ── */
+    .info-grid   { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+    .info-item   { background:var(--gris-100); border-radius:var(--radius-sm); padding:14px 16px; }
+    .info-label  { font-size:11px; font-weight:700; color:var(--gris-500); text-transform:uppercase; letter-spacing:.05em; margin-bottom:4px; }
+    .info-value  { font-size:14px; font-weight:600; color:var(--gris-900); }
+    /* ── Rapport ── */
+    .rapport-card { border:1.5px solid var(--gris-200); border-radius:var(--radius-sm); padding:16px; margin-bottom:12px; transition:box-shadow .2s; }
+    .rapport-card:hover { box-shadow:var(--ombre); }
+    .rapport-card .rc-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
+    .rapport-card .rc-titre { font-weight:700; font-size:15px; }
+    .rapport-card .rc-date  { font-size:12px; color:var(--gris-500); }
+    .rapport-card .rc-body  { font-size:13px; color:var(--gris-700); line-height:1.6; }
+    .rapport-card .rc-comm  { margin-top:10px; padding:10px 12px; background:var(--bleu-clair); border-radius:var(--radius-sm); font-size:13px; color:#1e40af; }
+    /* ── Étoiles ── */
+    .stars { color:#f59e0b; font-size:18px; }
+    .eval-card { border:1.5px solid var(--gris-200); border-radius:var(--radius-sm); padding:16px; margin-bottom:12px; }
+    .eval-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:10px; margin:12px 0; text-align:center; }
+    .eval-item label { font-size:11px; color:var(--gris-500); display:block; margin-bottom:4px; }
+    /* ── Formulaire rapport ── */
+    .form-rapport { background:var(--blanc); border-radius:var(--radius); box-shadow:var(--ombre); padding:24px; margin-bottom:20px; }
+    .form-rapport h3 { font-size:16px; font-weight:700; margin-bottom:16px; color:var(--gris-900); }
+    /* ── Badge statut rapport ── */
+    .badge-soumis   { background:#dbeafe; color:#1e40af; }
+    .badge-lu       { background:#fef3c7; color:#92400e; }
+    .badge-valide   { background:#d1fae5; color:#065f46; }
+    .badge-a_revoir { background:#fee2e2; color:#991b1b; }
+    @media(max-width:640px){ .info-grid{ grid-template-columns:1fr; } .eval-grid{ grid-template-columns:1fr 1fr; } }
+  </style>
+</head>
+<body>
+
+<button class="hamburger-btn" id="hamburger-btn"><span></span><span></span><span></span></button>
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <div class="sidebar-logo"><div class="icon">&#127891;</div>MVENGINEERING</div>
+    <div class="sidebar-sub">Espace Stagiaire</div>
+  </div>
+  <nav>
+    <a href="index.html"><span class="nav-icon">&#127968;</span>Accueil</a>
+    <a href="espace-stagiaire.html" class="active"><span class="nav-icon">&#129333;</span>Mon Espace</a>
+    <a href="demande.html"><span class="nav-icon">&#128221;</span>Nouvelle demande</a>
+    <a href="#" onclick="logoutStagiaire()"><span class="nav-icon">&#128682;</span>D&#233;connexion</a>
+  </nav>
+  <div class="sidebar-footer">&#169; 2025 MVENGINEERING</div>
+</aside>
+<div class="sidebar-overlay" id="sidebar-overlay"></div>
+<div id="toast-container"></div>
+
+<div class="topbar">
+  <span class="topbar-title">&#129333; Mon Espace Stagiaire</span>
+  <div class="topbar-actions">
+    <span id="topbar-user" style="font-size:13px;color:var(--gris-500)"></span>
+    <button class="btn btn-outline btn-sm" style="color:#059669;border-color:#059669" onclick="loadAll()">&#128260; Actualiser</button>
+  </div>
+</div>
+
+<div class="main-content">
+
+  <!-- En-tête profil avec progression -->
+  <div class="stag-header" id="stag-header">
+    <div class="stag-avatar" id="stag-avatar">&#129333;</div>
+    <div style="flex:1">
+      <div class="stag-name" id="stag-nom">Chargement&#8230;</div>
+      <div class="stag-sub" id="stag-info"></div>
+      <div class="prog-bar"><div class="prog-fill" id="prog-fill" style="width:0%"></div></div>
+      <div class="prog-label" id="prog-label"></div>
+    </div>
+  </div>
+
+  <!-- KPI rapides -->
+  <div class="stats-grid" style="margin-bottom:24px">
+    <div class="stat-card vert"><div class="stat-icon">&#128197;</div><div><div class="stat-value" id="kpi-debut">&#8212;</div><div class="stat-label">D&#233;but du stage</div></div></div>
+    <div class="stat-card bleu"><div class="stat-icon">&#9200;</div><div><div class="stat-value" id="kpi-duree">&#8212;</div><div class="stat-label">Dur&#233;e</div></div></div>
+    <div class="stat-card orange"><div class="stat-icon">&#128196;</div><div><div class="stat-value" id="kpi-rapports">&#8212;</div><div class="stat-label">Rapports soumis</div></div></div>
+    <div class="stat-card vert" style="border-left-color:#f59e0b"><div class="stat-icon" style="background:#fef3c7">&#11088;</div><div><div class="stat-value" id="kpi-note">&#8212;</div><div class="stat-label">Moyenne g&#233;n&#233;rale</div></div></div>
+  </div>
+
+  <!-- Onglets -->
+  <div class="card">
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab('profil')">&#128100; Mon Profil</button>
+      <button class="tab-btn" onclick="switchTab('rapport')">&#128221; Soumettre un rapport</button>
+      <button class="tab-btn" onclick="switchTab('mes-rapports')">&#128196; Mes Rapports</button>
+      <button class="tab-btn" onclick="switchTab('evaluations')">&#11088; Mes &#201;valuations</button>
+    </div>
+
+    <!-- ▸ PROFIL -->
+    <div class="tab-panel active" id="tab-profil">
+      <div id="profil-content">
+        <div style="text-align:center;padding:40px"><div class="spinner"></div></div>
+      </div>
+    </div>
+
+    <!-- ▸ SOUMETTRE UN RAPPORT -->
+    <div class="tab-panel" id="tab-rapport">
+      <div class="form-rapport">
+        <h3>&#128221; Nouveau rapport hebdomadaire</h3>
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">Semaine <span class="required">*</span></label>
+            <select class="form-control" id="rp-semaine">
+              <option value="1">Semaine 1</option><option value="2">Semaine 2</option>
+              <option value="3">Semaine 3</option><option value="4">Semaine 4</option>
+              <option value="5">Semaine 5</option><option value="6">Semaine 6</option>
+              <option value="7">Semaine 7</option><option value="8">Semaine 8</option>
+              <option value="9">Semaine 9</option><option value="10">Semaine 10</option>
+              <option value="11">Semaine 11</option><option value="12">Semaine 12</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Titre du rapport <span class="required">*</span></label>
+            <input type="text" class="form-control" id="rp-titre" placeholder="Ex: Semaine 1 \u2014 Prise en main">
+            <div class="form-error" id="err-titre"></div>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Contenu du rapport <span class="required">*</span></label>
+          <textarea class="form-control" id="rp-contenu" rows="7"
+            placeholder="D&#233;crivez vos activit&#233;s de la semaine, vos apprentissages, les difficult&#233;s rencontr&#233;es et vos objectifs pour la semaine suivante&#8230;"></textarea>
+          <div class="form-error" id="err-contenu"></div>
+          <div style="text-align:right;font-size:12px;color:var(--gris-500);margin-top:4px"><span id="char-count">0</span> caract&#232;res</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Fichier joint (PDF, optionnel)</label>
+          <div class="upload-zone" id="rp-upload-zone" onclick="document.getElementById('rp-fichier').click()">
+            <div style="font-size:28px;margin-bottom:8px">&#128206;</div>
+            <div style="font-size:13px;color:var(--gris-500)">Cliquez ou glissez un PDF ici (5 Mo max)</div>
+            <div style="font-size:12px;color:var(--vert);margin-top:6px" id="rp-fichier-nom"></div>
+            <input type="file" id="rp-fichier" accept=".pdf,application/pdf" hidden>
+          </div>
+        </div>
+        <div style="display:flex;justify-content:flex-end;gap:10px">
+          <button class="btn btn-outline" onclick="resetRapportForm()">R&#233;initialiser</button>
+          <button class="btn btn-primary" style="background:#059669" onclick="soumettreRapport()" id="btn-submit-rapport">
+            &#128228; Soumettre le rapport
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ▸ MES RAPPORTS -->
+    <div class="tab-panel" id="tab-mes-rapports">
+      <div id="mes-rapports-content">
+        <div style="text-align:center;padding:40px"><div class="spinner"></div></div>
+      </div>
+    </div>
+
+    <!-- ▸ MES ÉVALUATIONS -->
+    <div class="tab-panel" id="tab-evaluations">
+      <div id="evaluations-content">
+        <div style="text-align:center;padding:40px"><div class="spinner"></div></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script src="js/app.js"></script>
+<script>
+'use strict';
+
+var profilData    = null;
+var rapportFile   = null;
+
+/* ── Vérification session + init ── */
+(function() {
+  fetch(API_BASE + 'auth.php', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({action:'check'})
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(d){
+    if (!d || !d.success || !d.user || d.user.role !== 'stagiaire') {
+      window.location.href = 'login-stagiaire.html';
+      return;
+    }
+    document.getElementById('topbar-user').textContent = d.user.nom;
+    loadAll();
+  })
+  .catch(function(){ window.location.href = 'login-stagiaire.html'; });
+})();
+
+function loadAll() {
+  loadProfil();
+  loadMesRapports();
+  loadMesEvaluations();
+}
+
+/* ── Profil ── */
+function loadProfil() {
+  API.post('stagiaire.php', { action: 'get_mon_profil' }).then(function(r) {
+    if (!r.success) { Toast.error(r.message); return; }
+    profilData = r.profil;
+    var prog   = r.progression || 0;
+
+    /* En-tête */
+    var initiale = profilData.nom_complet ? profilData.nom_complet[0] : 'S';
+    document.getElementById('stag-avatar').textContent = initiale;
+    document.getElementById('stag-nom').textContent    = profilData.nom_complet;
+    document.getElementById('stag-info').textContent   = profilData.filiere + ' — ' + profilData.ecole;
+    document.getElementById('prog-fill').style.width   = prog + '%';
+    document.getElementById('prog-label').textContent  = 'Avancement du stage : ' + prog + '%';
+
+    /* KPI */
+    document.getElementById('kpi-debut').textContent   = formatDate(profilData.date_debut);
+    document.getElementById('kpi-duree').textContent   = profilData.duree;
+
+    /* Contenu profil */
+    var statutBadge = '<span class="badge badge-' + profilData.statut + '">' + escHtml(profilData.statut) + '</span>';
+    var html = '<div class="info-grid">'
+      + infoItem('Nom complet',      profilData.nom_complet)
+      + infoItem('Email',            profilData.email)
+      + infoItem('T&#233;l&#233;phone',        profilData.telephone)
+      + infoItem('&#201;cole',               profilData.ecole)
+      + infoItem('Fili&#232;re',             profilData.filiere)
+      + infoItem('Niveau',           profilData.niveau || '—')
+      + infoItem('D&#233;but du stage',      formatDate(profilData.date_debut))
+      + infoItem('Fin pr&#233;vue',          profilData.date_fin ? formatDate(profilData.date_fin) : '—')
+      + infoItem('Dur&#233;e',               profilData.duree)
+      + infoItem('Ma&#238;tre de stage',     profilData.maitre_stage || '—')
+      + infoItem('Statut', statutBadge, true)
+      + (profilData.note_finale ? infoItem('Moyenne g&#233;n&#233;rale', '<strong style="color:var(--vert);font-size:18px">' + profilData.note_finale + '/20</strong>', true) : '')
+      + '</div>';
+
+    if (profilData.appreciation) {
+      html += '<div style="margin-top:18px;padding:16px;background:var(--vert-clair);border-radius:var(--radius-sm)">'
+        + '<div style="font-size:12px;font-weight:700;color:#065f46;margin-bottom:6px;text-transform:uppercase">Appr&#233;ciation g&#233;n&#233;rale</div>'
+        + '<p style="color:#065f46;font-size:14px;line-height:1.7;margin:0">' + escHtml(profilData.appreciation) + '</p>'
+        + '</div>';
+    }
+
+    document.getElementById('profil-content').innerHTML = html;
+
+    /* KPI note */
+    if (profilData.note_finale) {
+      document.getElementById('kpi-note').textContent = profilData.note_finale + '/20';
+    }
+
+  }).catch(function(err) {
+    console.error('[espace] profil:', err);
+    document.getElementById('profil-content').innerHTML = '<div style="text-align:center;padding:40px;color:var(--gris-500)">Impossible de charger le profil. V&#233;rifiez la connexion.</div>';
+  });
+}
+
+function infoItem(label, value, raw) {
+  return '<div class="info-item">'
+    + '<div class="info-label">' + label + '</div>'
+    + '<div class="info-value">' + (raw ? value : escHtml(String(value || '—'))) + '</div>'
+    + '</div>';
+}
+
+/* ── Mes rapports ── */
+function loadMesRapports() {
+  API.post('stagiaire.php', { action: 'get_mes_rapports' }).then(function(r) {
+    if (!r.success) { return; }
+    var raps = r.rapports;
+    document.getElementById('kpi-rapports').textContent = raps.length;
+    var cont = document.getElementById('mes-rapports-content');
+
+    if (!raps.length) {
+      cont.innerHTML = '<div style="text-align:center;padding:40px">'
+        + '<div style="font-size:48px;margin-bottom:12px">&#128196;</div>'
+        + '<p style="color:var(--gris-500)">Vous n\'avez pas encore soumis de rapport.</p>'
+        + '<button class="btn btn-primary" style="background:#059669" onclick="switchTab(\'rapport\')">Soumettre mon premier rapport</button>'
+        + '</div>';
+      return;
+    }
+
+    var html = '';
+    for (var i = 0; i < raps.length; i++) {
+      var rap   = raps[i];
+      var cls   = 'badge-' + rap.statut;
+      var icone = rap.statut === 'valide' ? '&#9989;' : rap.statut === 'a_revoir' ? '&#9888;&#65039;' : '&#128336;';
+      html += '<div class="rapport-card">'
+        + '<div class="rc-head">'
+        + '<div><span style="font-size:12px;color:var(--gris-500);margin-right:8px">Semaine ' + rap.semaine + '</span>'
+        + '<span class="rc-titre">' + escHtml(rap.titre) + '</span></div>'
+        + '<div style="display:flex;align-items:center;gap:8px">'
+        + '<span class="badge ' + cls + '">' + icone + ' ' + escHtml(rap.statut.replace('_', ' ')) + '</span>'
+        + '<span class="rc-date">' + formatDate(rap.soumis_le) + '</span>'
+        + '</div></div>'
+        + '<div class="rc-body">' + escHtml(rap.contenu).substring(0, 200) + (rap.contenu.length > 200 ? '&#8230;' : '') + '</div>'
+        + (rap.commentaire_rh ? '<div class="rc-comm"><strong>&#128172; Commentaire RH :</strong> ' + escHtml(rap.commentaire_rh) + '</div>' : '')
+        + (rap.fichier ? '<div style="margin-top:8px"><a class="btn btn-outline btn-sm" href="uploads/rapports/' + escHtml(rap.fichier) + '" target="_blank">&#128196; T&#233;l&#233;charger le PDF</a></div>' : '')
+        + '</div>';
+    }
+    cont.innerHTML = html;
+  }).catch(function(err) { console.error('[espace] rapports:', err); });
+}
+
+/* ── Mes évaluations ── */
+function loadMesEvaluations() {
+  API.post('stagiaire.php', { action: 'get_mes_evaluations' }).then(function(r) {
+    if (!r.success) { return; }
+    var evals = r.evaluations;
+    var cont  = document.getElementById('evaluations-content');
+
+    if (!evals.length) {
+      cont.innerHTML = '<div style="text-align:center;padding:40px;color:var(--gris-500)">'
+        + '<div style="font-size:48px;margin-bottom:12px">&#11088;</div>'
+        + '<p>Aucune &#233;valuation disponible pour le moment.</p></div>';
+      return;
+    }
+
+    var criteres = [
+      { key: 'note_travail',       label: 'Qualit&#233; du travail' },
+      { key: 'note_ponctualite',   label: 'Ponctualit&#233;' },
+      { key: 'note_initiative',    label: 'Initiative' },
+      { key: 'note_communication', label: 'Communication' },
+      { key: 'note_technique',     label: 'Technique' }
+    ];
+
+    var html = '';
+    var totalMoy = 0;
+
+    for (var i = 0; i < evals.length; i++) {
+      var ev  = evals[i];
+      var sum = 0;
+      for (var j = 0; j < criteres.length; j++) { sum += parseFloat(ev[criteres[j].key] || 0); }
+      var moy   = ((sum / criteres.length) * 4).toFixed(1);
+      totalMoy += parseFloat(moy);
+      var color = moy >= 14 ? 'var(--vert)' : moy >= 10 ? 'var(--orange)' : 'var(--rouge)';
+
+      html += '<div class="eval-card">'
+        + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">'
+        + '<strong>Semaine ' + ev.semaine + '</strong>'
+        + '<div><span style="font-size:20px;font-weight:800;color:' + color + '">' + moy + '</span><span style="color:var(--gris-500);font-size:13px">/20</span></div>'
+        + '</div>'
+        + '<div class="eval-grid">';
+      for (var k = 0; k < criteres.length; k++) {
+        var note = parseInt(ev[criteres[k].key] || 0);
+        var stars = '';
+        for (var s = 1; s <= 5; s++) { stars += s <= note ? '&#9733;' : '&#9734;'; }
+        html += '<div class="eval-item"><label>' + criteres[k].label + '</label>'
+          + '<div class="stars" style="font-size:14px">' + stars + '</div></div>';
+      }
+      html += '</div>';
+      if (ev.commentaire) {
+        html += '<div style="margin-top:10px;padding:10px;background:var(--gris-100);border-radius:var(--radius-sm);font-size:13px;color:var(--gris-700)">'
+          + '&#128172; ' + escHtml(ev.commentaire) + '</div>';
+      }
+      if (ev.evaluateur_nom) {
+        html += '<div style="margin-top:6px;font-size:11px;color:var(--gris-500)">&#128100; &#201;valu&#233; par : ' + escHtml(ev.evaluateur_nom) + '</div>';
+      }
+      html += '</div>';
+    }
+
+    var moyGlobale = evals.length ? (totalMoy / evals.length).toFixed(1) : '—';
+    var moyColor   = parseFloat(moyGlobale) >= 14 ? 'var(--vert)' : parseFloat(moyGlobale) >= 10 ? 'var(--orange)' : 'var(--rouge)';
+
+    cont.innerHTML = '<div style="background:var(--gris-100);border-radius:var(--radius-sm);padding:16px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between">'
+      + '<div><div style="font-size:13px;font-weight:700;color:var(--gris-700)">Moyenne g&#233;n&#233;rale</div>'
+      + '<div style="font-size:11px;color:var(--gris-500)">' + evals.length + ' &#233;valuation(s)</div></div>'
+      + '<div style="font-size:36px;font-weight:800;color:' + moyColor + '">' + moyGlobale + '<span style="font-size:16px;color:var(--gris-500)">/20</span></div>'
+      + '</div>' + html;
+
+    document.getElementById('kpi-note').textContent = moyGlobale + '/20';
+
+  }).catch(function(err) { console.error('[espace] eval:', err); });
+}
+
+/* ── Soumettre rapport ── */
+document.getElementById('rp-contenu').addEventListener('input', function() {
+  document.getElementById('char-count').textContent = this.value.length;
+});
+
+var rz = document.getElementById('rp-upload-zone');
+var rf = document.getElementById('rp-fichier');
+rf.addEventListener('change', function() { handleFile(rf.files[0]); });
+rz.addEventListener('dragover', function(e) { e.preventDefault(); rz.classList.add('dragover'); });
+rz.addEventListener('dragleave', function() { rz.classList.remove('dragover'); });
+rz.addEventListener('drop', function(e) {
+  e.preventDefault(); rz.classList.remove('dragover');
+  var f = e.dataTransfer.files[0];
+  if (f) { handleFile(f); var dt = new DataTransfer(); dt.items.add(f); rf.files = dt.files; }
+});
+function handleFile(f) {
+  if (!f) { return; }
+  if (f.type !== 'application/pdf' && !f.name.endsWith('.pdf')) { Toast.error('Seuls les PDF sont acceptés.'); return; }
+  if (f.size > 5242880) { Toast.error('Fichier trop grand (max 5 Mo).'); return; }
+  rapportFile = f;
+  document.getElementById('rp-fichier-nom').textContent = '&#10003; ' + f.name + ' (' + (f.size/1024).toFixed(0) + ' Ko)';
+  rz.classList.add('has-file');
+}
+
+function soumettreRapport() {
+  var titre   = document.getElementById('rp-titre').value.trim();
+  var contenu = document.getElementById('rp-contenu').value.trim();
+  var semaine = document.getElementById('rp-semaine').value;
+  var ok      = true;
+
+  if (!titre) { document.getElementById('rp-titre').classList.add('error'); document.getElementById('err-titre').textContent='Titre requis.'; ok=false; }
+  else { document.getElementById('rp-titre').classList.remove('error'); document.getElementById('err-titre').textContent=''; }
+
+  if (contenu.length < 30) { document.getElementById('rp-contenu').classList.add('error'); document.getElementById('err-contenu').textContent='Contenu trop court (min. 30 caractères).'; ok=false; }
+  else { document.getElementById('rp-contenu').classList.remove('error'); document.getElementById('err-contenu').textContent=''; }
+
+  if (!ok) { return; }
+
+  var btn = document.getElementById('btn-submit-rapport');
+  btn.disabled = true;
+  btn.textContent = 'Envoi en cours\u2026';
+
+  var fd = new FormData();
+  fd.append('action',  'soumettre_rapport');
+  fd.append('semaine', semaine);
+  fd.append('titre',   titre);
+  fd.append('contenu', contenu);
+  if (rapportFile) { fd.append('fichier', rapportFile); }
+
+  API.postForm('stagiaire.php', fd).then(function(r) {
+    if (r.success) {
+      Toast.success(r.message);
+      resetRapportForm();
+      loadMesRapports();
+      switchTab('mes-rapports');
+    } else {
+      Toast.error(r.message);
+    }
+  }).catch(function(err) {
+    Toast.error(apiErrMsg(err));
+  }).then(function() {
+    btn.disabled = false;
+    btn.innerHTML = '&#128228; Soumettre le rapport';
+  });
+}
+
+function resetRapportForm() {
+  document.getElementById('rp-titre').value   = '';
+  document.getElementById('rp-contenu').value = '';
+  document.getElementById('rp-semaine').value = '1';
+  document.getElementById('rp-fichier-nom').textContent = '';
+  document.getElementById('char-count').textContent = '0';
+  rapportFile = null;
+  document.getElementById('rp-upload-zone').classList.remove('has-file','dragover');
+}
+
+/* ── Onglets ── */
+function switchTab(name) {
+  var btns   = document.querySelectorAll('.tab-btn');
+  var panels = document.querySelectorAll('.tab-panel');
+  for (var i = 0; i < btns.length;   i++) { btns[i].classList.remove('active'); }
+  for (var j = 0; j < panels.length; j++) { panels[j].classList.remove('active'); }
+  var btn = document.querySelector('.tab-btn[onclick="switchTab(\'' + name + '\')"]');
+  if (btn) { btn.classList.add('active'); }
+  var panel = document.getElementById('tab-' + name);
+  if (panel) { panel.classList.add('active'); }
+}
+
+function logoutStagiaire() {
+  API.post('auth.php', { action: 'logout' })
+    .catch(function(){})
+    .then(function(){ window.location.href = 'login-stagiaire.html'; });
+}
+</script>
+</body>
+</html>
